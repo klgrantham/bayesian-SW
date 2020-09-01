@@ -7,6 +7,9 @@ load('mcmc_results.Rda')
 library(tidyverse)
 
 plot_dens_true <- function(df, dfvals, dftrue, dftruevals, fillcolor){
+  # Plots a density (prior or posterior) against the true parameter value
+  # for all parameters
+  
   orderedparams <- c(
     "rho", "theta", "sig_sq_subject", "sig_sq_cluster",
     paste0('C',1:12)
@@ -22,23 +25,50 @@ plot_dens_true <- function(df, dfvals, dftrue, dftruevals, fillcolor){
       theme_bw()
 }
 
+plot_dens_true_all <- function(df, x, prior, post, dftrue, dftruevals){
+  # Plots prior and posterior densities against the true parameter value
+  # for all parameters, with x-axis range adjusted to show 99.8% of the
+  # posterior probability mass
+  
+  orderedparams <- c(
+    "rho", "theta", "sig_sq_subject", "sig_sq_cluster",
+    paste0('C',1:12)
+  )
+  df %>%
+    mutate(
+      parameters = ordered(parameters, levels=orderedparams)
+    ) %>%
+    ggplot(aes(x=x, y=post)) +
+    geom_area(fill="darkseagreen", alpha=0.5) +
+    geom_area(aes(x=x, y=prior), fill="darkorange", alpha=0.5) +
+    geom_vline(aes(xintercept=dftruevals), color="steelblue", size=1, data=dftrue) +
+    facet_wrap(~parameters, scales="free") +
+    theme_bw()
+}
+
 sig2c_implied <- function(sig2e, rho){
   # Calculates implied cluster variance using draws from
   # subject variance and within-cluster correlation
+  
   return(sig2e * rho/(1 - rho))
 }
 
-sig_sq_cluster <- sig2c_implied(sig_sq_subject, rho)
+# Prepares posterior draws for plotting
 Cnames <- paste('C[', 1:clusters, ']', sep='')
 pars <- c('rho', 'theta', 'sig_sq_subject', 'sig_sq_cluster', Cnames)
 draws <- as.data.frame(fit, pars=pars)
 parnames <- gsub("[][]", "", pars)
 colnames(draws) <- parnames
-gatherdraws <- draws %>% gather("parameters", "samplevals")
+longdraws <- draws %>% 
+              pivot_longer(
+                everything(), names_to='parameters', values_to='samplevals'
+              )
 
+# Prepares true parameter values for plotting
 true_vals <- c(rho, theta, sig_sq_subject, sig_sq_cluster, C)
 actual <- data.frame(parameters=parnames, truevals=true_vals)
 
+# Redefines priors (based on associated Stan file) and prepares for plotting
 rho_prior <- runif(2e4, 0, 1)
 theta_prior <- runif(2e4, -1e3, 1e3)
 sig2e_prior <- exp(runif(2e4, -5, 5))
@@ -50,21 +80,49 @@ colnames(Cdf) <- gsub("[][]", "", Cnames)
 priors <- data.frame(rho=rho_prior, theta=theta_prior,
                      sig_sq_subject=sig2e_prior, sig_sq_cluster=sig2c_prior,
                      Cdf)
-gatherpriors <- priors %>% gather("parameters", "priorvals")
+longpriors <- priors %>%
+                pivot_longer(
+                  everything(), names_to='parameters', values_to='priorvals'
+                )
 
+# Benchmark plot of posteriors against true values
 mcmc_recover_hist(draws, true_vals)
 
 # Plot prior distributions with true parameter values
-plot_dens_true(gatherpriors, gatherpriors$priorvals, actual, actual$truevals, "darkorange") +
+plot_dens_true(longpriors, longpriors$priorvals, actual, actual$truevals, "darkorange") +
   labs(
     title='Priors and true values',
     x='Value'
   )
 
 # Plot marginal posterior distributions with true parameter values
-plot_dens_true(gatherdraws, gatherdraws$samplevals, actual, actual$truevals, "darkseagreen") +
+plot_dens_true(longdraws, longdraws$samplevals, actual, actual$truevals, "darkseagreen") +
   labs(
     title='Posteriors and true values',
     x='Value'
   )
 
+# Calculates densities for the range of values that covers 99.8% of the
+# posterior probability mass (for diffuse priors, this will trim the priors
+# so we can view the densities simultaneously without them being on very
+# different scales)
+vals <- NULL
+for (par in colnames(draws)){
+  edges <- quantile(draws[[par]], c(0.001, 0.999))
+  post_dens <- density(draws[[par]], n=1000, from=edges[1], to=edges[2])
+  prior_dens <- density(priors[[par]], n=1000, from=edges[1], to=edges[2])
+  parvals <- tibble(
+              parameters=par,
+              x=post_dens$x,
+              prior=prior_dens$y,
+              post=post_dens$y
+            )
+  vals <- bind_rows(vals, parvals)
+}
+
+# Plot prior and posterior distributions with true parameter values
+plot_dens_true_all(vals, vals$x, vals$prior, vals$post, actual, actual$truevals) +
+  labs(
+    title='Priors, posteriors and true values',
+    x='Value'
+  )
