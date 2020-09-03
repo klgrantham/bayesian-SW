@@ -85,3 +85,5 @@ suppressMessages(library(bayesplot))
 draws <- as.data.frame(fit, pars=pars)
 true.vals <- c(theta, sig_sq_cluster, sig_sq_subject, rho, C)
 mcmc_recover_hist(draws, true.vals) + ggtitle('Marginal posterior histograms vs true values')
+
+save.image('mcmc_results.Rda')
