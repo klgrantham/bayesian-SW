@@ -4,13 +4,13 @@
 
 # fixed params
 
-clusters <- 12          # number of clusters
-subjects <- 50          # subjects per cluster-period
-periods <- 4            # number of periods
+clusters <- 4          # number of clusters
+subjects <- 100          # subjects per cluster-period
+periods <- 5            # number of periods
 
 sig_sq_subject <- 0.9   # between-subject variance
-WPICC <- 0.1            # within-period intracluster correlation
-CAC <- 0.8              # cluster autocorrelation
+WPICC <- 0.5            # within-period intracluster correlation
+CAC <- 0.5              # cluster autocorrelation
 
 theta <- 2           # treatment effect
 
@@ -30,7 +30,6 @@ sig_sq_cp <- sig_sq_subject * WPICC / (1 - WPICC) - sig_sq_cluster
 
 # random variables
 
-set.seed(123)
 C <- rnorm(n=clusters, mean=0, sd=sqrt(sig_sq_cluster))
 CP <- rnorm(n=clusters * periods, mean=0, sd=sqrt(sig_sq_cp))
 Y <- rep(NA, clusters * periods * subjects)
@@ -48,7 +47,6 @@ for (i in 1:clusters) {
 # ---- fit model ----
 
 library(rstan)
-options(mc.cores = parallel::detectCores())
 
 data <- list(
   clusters = clusters,
@@ -59,14 +57,14 @@ data <- list(
   X = X,
   Y = Y
 )
-fit <- stan(file='SW-HG-corr.stan', data = data, iter = 11e3, warmup = 1e3, thin=2)
+fit <- stan(file='SW-HG-corr.stan', data = data, iter = 6e3, warmup = 1e3, cores=1)
 
 # ---- get diagnostics ----
 
 pars <- c('theta', 'WPICC', 'CAC', 'sig_sq_subject', 'sig_sq_cluster', 'sig_sq_cp', 'C')
 
 # Inference summary table
-print(fit, pars=pars)
+print(fit, pars=pars, digits_summary=4)
 
 # Check whether chains appear stationary
 stan_trace(fit, pars=pars) + ggtitle('Trace plots of MCMC draws')
