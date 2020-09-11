@@ -9,7 +9,7 @@ library(invgamma)
 
 params <- c(
   "theta", "WPICC", "CAC", "sig_sq_subject", "sig_sq_cluster", "sig_sq_cp",
-  paste0('C',1:12)
+  paste0('C',1:clusters)
 )
 
 plot_dens_true <- function(df, dfvals, dftrue, dftruevals, fillcolor){
