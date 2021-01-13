@@ -6,12 +6,13 @@
 
 library(tidyverse)
 
-file.names <- dir('./reduced_results')
+file.names <- dir('./performance_measures')
 
 allbiasrows <- data.frame()
 allRMSErows <- data.frame()
 allcovrows <- data.frame()
 for (i in 1:length(file.names)) {
+  
   load(file.names[i])
   
   params <- results$params
