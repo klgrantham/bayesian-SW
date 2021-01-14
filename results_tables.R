@@ -8,6 +8,7 @@ library(tidyverse)
 library(tables)
 library(knitr)
 library(kableExtra)
+library(gridExtra)
 
 file.names <- dir('./performance_measures')
 
@@ -107,3 +108,82 @@ toLatex(
 kbl(biasdf, booktabs=T) %>%
   kable_styling() %>%
   collapse_rows(columns=1:4, valign="top")
+
+
+# Plot contents of results table
+Tp.labs <- c("T = 5", "T = 9")
+names(Tp.labs) <- c("5", "9")
+
+m.labs <- c("m = 10", "m = 100")
+names(m.labs) <- c("10", "100")
+
+plot_measure <- function(measure) {
+  ggplot(aes(x=S, y=measure, group=method)) +
+    geom_line(aes(color=method)) +
+    facet_grid(
+      m ~ Tp,
+      labeller = labeller(Tp = Tp.labs, m = m.labs)
+    ) +
+    theme(legend.position="none") +
+    theme_bw()
+}
+
+p1 <- biasdf %>%
+  filter(rho1==0.05 & r==0.8 & parameters=='theta') %>%
+    ggplot(aes(x=S, y=bias, group=method)) +
+      geom_line(aes(color=method), show.legend=F) +
+      facet_grid(
+        m ~ Tp,
+        labeller = labeller(Tp = Tp.labs, m = m.labs)
+      ) +
+      theme_bw()  +
+      theme(
+        strip.background = element_rect(
+          color="white", fill="white", linetype="solid"
+        )
+      )
+p2 <- biasdf %>%
+  filter(rho1==0.1 & r==0.8 & parameters=='theta') %>%
+  ggplot(aes(x=S, y=bias, group=method)) +
+  geom_line(aes(color=method), show.legend=F) +
+  facet_grid(
+    m ~ Tp,
+    labeller = labeller(Tp = Tp.labs, m = m.labs)
+  ) +
+  theme_bw()  +
+  theme(
+    strip.background = element_rect(
+      color="white", fill="white", linetype="solid"
+    )
+  )
+p3 <- biasdf %>%
+  filter(rho1==0.05 & r==1.0 & parameters=='theta') %>%
+  ggplot(aes(x=S, y=bias, group=method)) +
+  geom_line(aes(color=method), show.legend=F) +
+  facet_grid(
+    m ~ Tp,
+    labeller = labeller(Tp = Tp.labs, m = m.labs)
+  ) +
+  theme_bw()  +
+  theme(
+    strip.background = element_rect(
+      color="white", fill="white", linetype="solid"
+    )
+  )
+p4 <- biasdf %>%
+  filter(rho1==0.1 & r==1.0 & parameters=='theta') %>%
+  ggplot(aes(x=S, y=bias, group=method)) +
+  geom_line(aes(color=method), show.legend=F) +
+  facet_grid(
+    m ~ Tp,
+    labeller = labeller(Tp = Tp.labs, m = m.labs)
+  ) +
+  theme_bw()  +
+  theme(
+    strip.background = element_rect(
+      color="white", fill="white", linetype="solid"
+    )
+  )
+#grid.arrange(p1, p2, p3, p4, nrow=2, ncol=2)
+grid.arrange(p1, p2, nrow=2)
+# TODO: include legend at bottom of arranged plot
