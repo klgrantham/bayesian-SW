@@ -7,8 +7,168 @@ library(lme4)
 library(tidyverse)
 library(parameters)
 
+calculate_measures <- function(clust_per_seq, periods, subjects, WPICC, CAC, theta) {
+  # Calculate performance measures with estimates datasets and save results
+  
+  # Load estimates datasets
+  WPICC100 <- WPICC*100
+  CAC100 <- CAC*100
+  config <- paste0(
+    '_S', clust_per_seq,
+    '_T', periods,
+    '_m', subjects,
+    '_WPICC', WPICC100,
+    '_CAC', CAC100,
+    '_theta', theta
+  )
+  
+  infile=paste0(
+    'estimates/',
+    'estimates',
+    config,
+    '.Rda'
+  )
+  load(file=infile)
+  # Contains: est$REML_ests, est$REML_stderrs, est$stderrKRs,
+  #           est$REML_CI_KR_lowers, est$REML_CI_KR_uppers,
+  #           est$MCMC_means, est$MCMC_medians, est$MCMC_sds,
+  #           est$MCMC_025, est$MCMC_975, est$MCMC_powvals,
+  #           est$true_params, est$nonzerovar
+  
+  # Calculate performance measures across all valid replicates
+  
+  # Number of valid MCMC estimates (those with divergent transitions excluded)
+  MCMCreps <- dim(est$MCMC_means)[1]
+  
+  # Number of REML estimates
+  REMLreps <- dim(est$REML_ests)[1]
+
+  # Calculate bias
+  MCMC_mean_bias <- bias(est$MCMC_means, est$true_params, 'MCMC_mean_bias')
+  MCMC_median_bias <- bias(est$MCMC_medians, est$true_params, 'MCMC_median_bias')
+  REML_bias <- bias(est$REML_ests, est$true_params, 'REML_bias')
+  # Calculate MCSE of bias estimates
+  MCMC_mean_MCSE_bias <- MCSE_bias(est$MCMC_means, 'MCMC_mean_MCSE_bias')
+  MCMC_median_MCSE_bias <- MCSE_bias(est$MCMC_medians, 'MCMC_median_MCSE_bias')
+  REML_MCSE_bias <- MCSE_bias(est$REML_ests, 'REML_MCSE_bias')
+  
+  # Calculate MSE
+  MCMC_mean_MSE <- MSE(est$MCMC_means, est$true_params, 'MCMC_mean_MSE')
+  MCMC_median_MSE <- MSE(est$MCMC_medians, est$true_params, 'MCMC_median_MSE')
+  REML_MSE <- MSE(est$REML_ests, est$true_params, 'REML_MSE')
+  # Calculate MCSE of MSE estimates
+  MCMC_mean_MCSE_MSE <- MCSE_MSE(est$MCMC_means, est$true_params,
+                                 MCMC_mean_MSE, 'MCMC_mean_MCSE_MSE')
+  MCMC_median_MCSE_MSE <- MCSE_MSE(est$MCMC_medians, est$true_params,
+                              MCMC_median_MSE, 'MCMC_median_MCSE_MSE')
+  REML_MCSE_MSE <- MCSE_MSE(est$REML_ests, est$true_params, REML_MSE,
+                            'REML_MCSE_MSE')
+  
+  # Calculate interval coverage
+  true_params_MCMCrep <- est$true_params[rep(1, MCMCreps),] # true_params is a row vector
+  MCMC_coverage <- coverage(est$MCMC_025, est$MCMC_975,
+                            true_params_MCMCrep, 'MCMC_coverage')
+  true_params_REMLrep <- est$true_params[rep(1, REMLreps),]
+  REML_KR_coverage <- coverage(est$REML_CI_KR_lowers, est$REML_CI_KR_uppers,
+                               true_params_REMLrep, 'REML_coverage')
+  # Calculate MCSE of coverage estimates
+  MCMC_MCSE_coverage <- MCSE_coverage(MCMCreps, MCMC_coverage,
+                                      'MCMC_MCSE_coverage')
+  REML_KR_MCSE_coverage <- MCSE_coverage(REMLreps, REML_KR_coverage,
+                                         'REML_KR_MCSE_coverage')
+  
+  # Calculate empirical standard error
+  MCMC_mean_empSE <- empSE(est$MCMC_means, 'MCMC_mean_empSE')
+  REML_empSE <- empSE(est$REML_ests, 'REML_empSE')
+  # Calculate MCSE of empirical SE
+  MCMC_mean_MCSE_empSE <- MCSE_empSE(MCMCreps, MCMC_mean_empSE, 'MCMC_mean_MCSE_empSE')
+  REML_MCSE_empSE <- MCSE_empSE(REMLreps, REML_empSE, 'REML_MCSE_empSE')
+  
+  # Calculate average model standard error
+  # Root-mean of squared model SEs
+  MCMC_avgmodSE <- avgmodSE(est$MCMC_sds, 'MCMC_avgmodSE')
+  REML_avgKRmodSE <- avgmodSE(est$REML_stderrKRs, 'REML_avgKRmodSE')
+  REML_avgmodSE <- avgmodSE(est$REML_stderrs, 'REML_avgmodSE')
+  # Calculate MCSE of average model SE
+  MCMC_MCSE_avgmodSE <- MCSE_avgmodSE(est$MCMC_sds, MCMC_avgmodSE,
+                                      'MCMC_MCSE_avgmodSE')
+  REML_MCSE_avgKRmodSE <- MCSE_avgmodSE(est$REML_stderrKRs, REML_avgKRmodSE,
+                                      'REML_MCSE_avgKRmodSE')
+  REML_MCSE_avgmodSE <- MCSE_avgmodSE(est$REML_stderrs, REML_avgmodSE,
+                                      'REML_MCSE_avgmodSE')
+  
+  # Calculate 'power'
+  MCMC_pow <- colMeans(est$MCMC_powvals)
+  MCMC_pow_df <- as.data.frame(t(MCMC_pow))
+  MCMC_pow_df$measure <- 'MCMC_power'
+  
+  # Label true parameter values
+  est$true_params$measure <- 'true_val'
+  
+  measures <- rbind(
+    est$true_params,
+    MCMC_mean_bias,
+    MCMC_median_bias,
+    REML_bias,
+    MCMC_mean_MCSE_bias,
+    MCMC_median_MCSE_bias,
+    REML_MCSE_bias,
+    MCMC_mean_MSE,
+    MCMC_median_MSE,
+    REML_MSE,
+    MCMC_mean_MCSE_MSE,
+    MCMC_median_MCSE_MSE,
+    REML_MCSE_MSE,
+    MCMC_coverage,
+    REML_KR_coverage,
+    MCMC_MCSE_coverage,
+    REML_KR_MCSE_coverage,
+    MCMC_mean_empSE,
+    REML_empSE,
+    MCMC_mean_MCSE_empSE,
+    REML_MCSE_empSE,
+    MCMC_avgmodSE,
+    REML_avgKRmodSE,
+    REML_avgmodSE,
+    MCMC_MCSE_avgmodSE,
+    REML_MCSE_avgKRmodSE,
+    REML_MCSE_avgmodSE,
+    MCMC_pow_df
+  )
+  
+  reps <- data.frame(
+    MCMCreps=MCMCreps,
+    REMLreps=REMLreps
+  )
+  
+  params <- data.frame(
+    S=clust_per_seq,
+    Tp=periods,
+    m=subjects,
+    rho1=WPICC,
+    r=CAC
+  )
+  
+  results <- list(
+    measures = measures,
+    reps = reps,
+    params = params
+  )
+  
+  dir.create('performance_measures')
+  
+  save(
+    'results',
+    file=paste0(
+      'performance_measures/',
+      'performancemeasures',
+      config,
+      '.Rda')
+  )
+}
+
 collate_results <- function(Nrep, clust_per_seq, periods, subjects, WPICC, CAC, theta) {
-  # Collate results across (valid) replicates and compute performance measures
+  # Collate results across (valid) replicates and save estimates
   
   MCMC_means <- data.frame()
   MCMC_medians <- data.frame()
@@ -38,7 +198,7 @@ collate_results <- function(Nrep, clust_per_seq, periods, subjects, WPICC, CAC, 
     
     infile=paste0(
       'reduced_results/',
-      'reduced_results',
+      'reducedresults',
       config,
       sprintf('_seed%04d', n),
       '.Rda'
@@ -88,99 +248,33 @@ collate_results <- function(Nrep, clust_per_seq, periods, subjects, WPICC, CAC, 
   
   true_params <- res$truevals
   
-  # Calculate performance measures across all valid replicates
-  
-  # Number of valid MCMC replicates (those with divergent transitions excluded)
-  MCMCreps <- dim(MCMC_means)[1]
-  
-  # Number of "valid" REML replicates
-  REMLreps <- nonzerovar
-  
-  # Calculate bias
-  MCMC_mean_bias <- bias(MCMC_means, true_params, 'MCMC_mean_bias')
-  MCMC_median_bias <- bias(MCMC_medians, true_params, 'MCMC_median_bias')
-  REML_bias <- bias(REML_ests, true_params, 'REML_bias')
-  
-  # Calculate MSE
-  MCMC_mean_mse <- mse(MCMC_means, true_params, 'MCMC_mean_mse')
-  MCMC_median_mse <- mse(MCMC_medians, true_params, 'MCMC_median_mse')
-  REML_mse <- mse(REML_ests, true_params, 'REML_mse')
-  
-  # Calculate Monte Carlo standard deviation
-  MCMC_mean_MCsd <- MC.sd(MCMC_means, 'MCMC_mean_MCsd')
-  REML_MCsd <- MC.sd(REML_ests, 'REML_MCsd')
-  
-  # Calculate average standard errors
-  MCMC_avg_SD <- as.data.frame(t(colMeans(MCMC_sds)))
-  MCMC_avg_SD$measure <- 'MCMC_avg_SD'
-  REML_avg_KR_SE <- as.data.frame(t(colMeans(REML_stderrKRs)))
-  REML_avg_KR_SE$measure <- 'REML_avg_KR_SE'
-  REML_avg_SE <- as.data.frame(t(colMeans(REML_stderrs)))
-  REML_avg_SE$measure <- 'REML_avg_SE'
-  
-  # Calculate interval coverage
-  true_params_MCMCrep <- true_params[rep(1, MCMCreps),] # true_params is a row vector
-  MCMC_coverage <- coverage(MCMC_025, MCMC_975, true_params_MCMCrep, 'MCMC_coverage')
-  true_params_REMLrep <- true_params[rep(1, REMLreps),]
-  REML_KR_coverage <- coverage(REML_CI_KR_lowers, REML_CI_KR_uppers,
-                               true_params_REMLrep, 'REML_coverage')
-
-  # Calculate 'power'
-  MCMC_theta_pow <- sum(MCMC_powvals$theta)/length(MCMC_powvals$theta)
-  MCMC_pow <- c(MCMC_theta_pow, rep(NA, length(rnames_MCMC)-1))
-  MCMC_pow_df <- as.data.frame(t(MCMC_pow))
-  colnames(MCMC_pow_df) <- rnames_MCMC
-  MCMC_pow_df$measure <- 'MCMC_power'
-
-  # Include BPICC
-  true_params$measure <- 'true_val'
-  
-  measures <- rbind(
-    true_params,
-    MCMC_mean_bias,
-    MCMC_median_bias,
-    REML_bias,
-    MCMC_avg_SD,
-    REML_avg_KR_SE,
-    REML_avg_SE,
-    MCMC_mean_mse,
-    REML_mse,
-    MCMC_mean_MCsd,
-    REML_MCsd,
-    MCMC_coverage,
-    REML_KR_coverage,
-    MCMC_pow_df
+  # Save estimates datasets
+  est <- list(
+    REML_ests = REML_ests,
+    REML_stderrs = REML_stderrs,
+    REML_stderrKRs = REML_stderrKRs,
+    REML_CI_KR_lowers = REML_CI_KR_lowers,
+    REML_CI_KR_uppers = REML_CI_KR_uppers,
+    MCMC_means = MCMC_means,
+    MCMC_medians = MCMC_medians,
+    MCMC_sds = MCMC_sds,
+    MCMC_025 = MCMC_025,
+    MCMC_975 = MCMC_975,
+    MCMC_powvals = MCMC_powvals,
+    true_params = true_params,
+    nonzerovar = nonzerovar
   )
   
-  reps <- data.frame(
-    Nreps=Nrep,
-    MCMCreps=MCMCreps,
-    REMLreps=REMLreps
-  )
-  
-  params <- data.frame(
-    S=clust_per_seq,
-    Tp=periods,
-    m=subjects,
-    rho1=WPICC,
-    r=CAC
-  )
-
-  results <- list(
-    measures = measures,
-    reps = reps,
-    params = params
-  )
-  
-  dir.create('performance_measures')
+  dir.create('estimates')
 
   save(
-    'results',
+    'est',
     file=paste0(
-      'performance_measures/',
-      'performance_measures_',
+      'estimates/',
+      'estimates',
       config,
-      '.Rda')
+      '.Rda'
+    )
   )
 }
 
@@ -285,7 +379,7 @@ reduce_nth_results <- function(n, clust_per_seq, periods, subjects, WPICC, CAC, 
     
     # Derive BPICC posterior from posterior draws
     post$BPICC <- post$WPICC * post$CAC
-    pars <- c('theta', 'WPICC', 'CAC', 'sig_sq_subject', 'sig_sq_cluster', 'sig_sq_cp', 'BPICC')
+    pars <- c(pars, 'BPICC')
   }
   
   REML_res <- data.frame(
@@ -342,14 +436,14 @@ reduce_nth_results <- function(n, clust_per_seq, periods, subjects, WPICC, CAC, 
     'res',
     file=paste0(
       'reduced_results/',
-      'reduced_results',
+      'reducedresults',
       config,
       '.Rda'
     )
   )
 }
 
-# Compute bias
+# Bias
 bias <- function(sim_estimates, true_params, measure_name) {
   # Difference between average estimate across replications and true value
   bias_sim_estimates_df <- colMeans(sim_estimates) - true_params
@@ -357,29 +451,92 @@ bias <- function(sim_estimates, true_params, measure_name) {
   return(bias_sim_estimates_df)
 }
 
-# Compute MSE
-mse <- function(sim_estimates, true_params, measure_name) {
-  sim_estimates_centered <- sweep(as.matrix(sim_estimates), 2, as.matrix(true_params), '-')
-  mse_sim_estimates <- apply(sim_estimates_centered^2, 2, mean)
-  mse_sim_estimates_df <- as.data.frame(t(mse_sim_estimates)) # TODO: Find more elegant way
-  mse_sim_estimates_df$measure <- measure_name
-  return(mse_sim_estimates_df)
+# Monte Carlo standard error (MCSE) of bias estimate
+MCSE_bias <- function(sim_estimates, measure_name) {
+  nsim <- dim(sim_estimates)[1]
+  var_est <- apply(as.matrix(sim_estimates), 2, var)
+  MCSE_bias <- sqrt((1/nsim)*var_est)
+  MCSE_bias_df <- as.data.frame(t(MCSE_bias))
+  MCSE_bias_df$measure <- measure_name
+  return(MCSE_bias_df)
 }
 
-# Compute Monte Carlo standard deviation
-MC.sd <- function(sim_estimates, measure_name) {
-  MC_sd_sim_estimates <- apply(as.matrix(sim_estimates), 2, sd)
-  MC_sd_sim_estimates_df <- as.data.frame(t(MC_sd_sim_estimates))
-  MC_sd_sim_estimates_df$measure <- measure_name
-  return(MC_sd_sim_estimates_df)
+# Mean squared error (MSE)
+MSE <- function(sim_estimates, true_params, measure_name) {
+  diff_est <- sweep(as.matrix(sim_estimates), 2, as.matrix(true_params), '-')
+  mean_sq_diff <- apply(diff_est^2, 2, mean)
+  MSE_df <- as.data.frame(t(mean_sq_diff))
+  MSE_df$measure <- measure_name
+  return(MSE_df)
 }
 
+# MCSE of MSE estimate
+MCSE_MSE <- function(sim_estimates, true_params, MSE_ests, measure_name) {
+  nsim <- dim(sim_estimates)[1]
+  diff_est_true <- sweep(as.matrix(sim_estimates), 2, as.matrix(true_params), '-')
+  sq_diff <- diff_est_true^2
+  
+  diff_sqdiff_MSE <- sweep(as.matrix(sq_diff), 2, as.matrix(MSE_ests[-ncol(MSE_ests)]), '-')
+  mean_sq_diff <- apply(diff_sqdiff_MSE^2, 2, mean)
+  MCSE_MSE <- sqrt((1/(nsim-1))*mean_sq_diff)
+  MCSE_MSE_df <- as.data.frame(t(MCSE_MSE))
+  MCSE_MSE_df$measure <- measure_name
+  return(MCSE_MSE_df)
+}
+
+# Interval coverage
 # Do confidence/credible intervals include true parameter value?
 coverage <- function(sim_lower, sim_upper, true_params_rep, measure_name) {
-  Nrep <- dim(sim_lower)[1]
   covered <- (true_params_rep >= sim_lower) & (true_params_rep <= sim_upper)
-  covprop <- colSums(covered)/Nrep
+  covprop <- colMeans(covered)
   covprop_df <- as.data.frame(t(covprop))
   covprop_df$measure <- measure_name
   return(covprop_df)
+}
+
+# MCSE of coverage
+MCSE_coverage <- function(nsim, cov_ests, measure_name) {
+  coverage_ests <- cov_ests[-ncol(cov_ests)]
+  MCSE_cov <- sqrt((1/nsim)*(as.matrix(coverage_ests) * (1 - as.matrix(coverage_ests))))
+  MCSE_cov_df <- as.data.frame(MCSE_cov)
+  MCSE_cov_df$measure <- measure_name
+  return(MCSE_cov_df)
+}
+
+# Empirical standard error
+empSE <- function(sim_estimates, measure_name) {
+  empSE_est <- apply(as.matrix(sim_estimates), 2, sd)
+  empSE_df <- as.data.frame(t(empSE_est))
+  empSE_df$measure <- measure_name
+  return(empSE_df)
+}
+
+# MCSE of empirical SE
+MCSE_empSE <- function(nsim, empSE_ests, measure_name) {
+  empSE_ests <- empSE_ests[-ncol(empSE_ests)]
+  MCSE_empSE <- as.matrix(empSE_ests)/(sqrt(2*(nsim-1)))
+  MCSE_empSE_df <- as.data.frame(MCSE_empSE)
+  MCSE_empSE_df$measure <- measure_name
+  return(MCSE_empSE_df)
+}
+
+# Average model standard error
+avgmodSE <- function(sim_estimates, measure_name) {
+  avgmodSE <- sqrt(colMeans(sim_estimates^2))
+  avgmodSE_df <- as.data.frame(t(avgmodSE))
+  avgmodSE_df$measure <- measure_name
+  return(avgmodSE_df)
+}
+
+# MCSE of average model SE
+MCSE_avgmodSE <- function(sim_estimates, avgmodSE_ests, measure_name) {
+  nsim <- dim(sim_estimates)[1]
+  avgmodSE_ests <- avgmodSE_ests[-ncol(avgmodSE_ests)]
+  sq_avgmodSE_ests <- as.matrix(avgmodSE_ests)^2
+  sq_ests <- as.matrix(sim_estimates)^2
+  varvar <- apply(sq_ests, 2, var)
+  MCSE_avgmodSE <- sqrt(varvar/(4*nsim*(sq_avgmodSE_ests)))
+  MCSE_avgmodSE_df <- as.data.frame(MCSE_avgmodSE)
+  MCSE_avgmodSE_df$measure <- measure_name
+  return(MCSE_avgmodSE_df)
 }
