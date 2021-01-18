@@ -88,6 +88,12 @@ fit_models <- function(params, stanmod, seedval){
   
   # ---- fit models ----
   
+  if (CAC==1.0) {
+    pars <- c('theta', 'WPICC', 'sig_sq_subject', 'sig_sq_cluster')
+  } else {
+    pars <- c('theta', 'WPICC', 'CAC', 'sig_sq_subject', 'sig_sq_cluster', 'sig_sq_cp')
+  }
+  
   # Bayesian model
   
   start.time <- Sys.time()
@@ -102,7 +108,7 @@ fit_models <- function(params, stanmod, seedval){
     Y = Y
   )
   
-  fit <- sampling(stanmod, data = data, iter = 6e3, warmup = 1e3,
+  fit <- sampling(stanmod, data = data, pars = pars, iter = 6e3, warmup = 1e3,
                   seed=seedval, control = list(adapt_delta = 0.9), cores=1)
   
   end.time <- Sys.time()
@@ -128,10 +134,8 @@ fit_models <- function(params, stanmod, seedval){
   
   if (CAC==1.0) {
     remlfit <- lmer(Y ~ treat + per + (1 | clust), data=dat, REML = TRUE)
-    pars <- c('theta', 'WPICC', 'sig_sq_subject', 'sig_sq_cluster')
   } else {
     remlfit <- lmer(Y ~ treat + per + (1 | clust) + (1 | clustper), data=dat, REML = TRUE)
-    pars <- c('theta', 'WPICC', 'CAC', 'sig_sq_subject', 'sig_sq_cluster', 'sig_sq_cp')
   }
   
   end.time <- Sys.time()
