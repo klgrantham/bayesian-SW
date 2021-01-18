@@ -22,3 +22,7 @@ reduce_all_results(2, myparams$clust_per_seq, myparams$periods,
 collate_results(2, myparams$clust_per_seq, myparams$periods,
                 myparams$subjects, myparams$WPICC,
                 myparams$CAC, myparams$theta)
+
+calculate_measures(2, myparams$clust_per_seq, myparams$periods,
+                   myparams$subjects, myparams$WPICC,
+                   myparams$CAC, myparams$theta)
