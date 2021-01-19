@@ -197,8 +197,9 @@ plot_measure <- function(measure) {
 
 p1 <- biasdf %>%
   filter(rho1==0.05 & r==0.8 & parameters=='theta') %>%
-    ggplot(aes(x=S, y=bias, group=method)) +
-      geom_line(aes(color=method), show.legend=F) +
+    ggplot(aes(x=S, y=value, group=method)) +
+      geom_line(aes(color=method), show.legend=FALSE) +
+      geom_point(aes(color=method), show.legend=FALSE) +
       facet_grid(
         m ~ Tp,
         labeller = labeller(Tp = Tp.labs, m = m.labs)
@@ -211,8 +212,9 @@ p1 <- biasdf %>%
       )
 p2 <- biasdf %>%
   filter(rho1==0.1 & r==0.8 & parameters=='theta') %>%
-  ggplot(aes(x=S, y=bias, group=method)) +
-  geom_line(aes(color=method), show.legend=F) +
+  ggplot(aes(x=S, y=value, group=method)) +
+  geom_point(aes(color=method), show.legend=FALSE) +
+  geom_line(aes(color=method), show.legend=FALSE) +
   facet_grid(
     m ~ Tp,
     labeller = labeller(Tp = Tp.labs, m = m.labs)
@@ -225,8 +227,9 @@ p2 <- biasdf %>%
   )
 p3 <- biasdf %>%
   filter(rho1==0.05 & r==1.0 & parameters=='theta') %>%
-  ggplot(aes(x=S, y=bias, group=method)) +
-  geom_line(aes(color=method), show.legend=F) +
+  ggplot(aes(x=S, y=value, group=method)) +
+  geom_line(aes(color=method), show.legend=FALSE) +
+  geom_point(aes(color=method), show.legend=FALSE) +
   facet_grid(
     m ~ Tp,
     labeller = labeller(Tp = Tp.labs, m = m.labs)
@@ -239,8 +242,9 @@ p3 <- biasdf %>%
   )
 p4 <- biasdf %>%
   filter(rho1==0.1 & r==1.0 & parameters=='theta') %>%
-  ggplot(aes(x=S, y=bias, group=method)) +
-  geom_line(aes(color=method), show.legend=F) +
+  ggplot(aes(x=S, y=value, group=method)) +
+  geom_line(aes(color=method), show.legend=FALSE) +
+  geom_point(aes(color=method), show.legend=FALSE) +
   facet_grid(
     m ~ Tp,
     labeller = labeller(Tp = Tp.labs, m = m.labs)
