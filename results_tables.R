@@ -6,64 +6,112 @@
 
 library(tidyverse)
 library(tables)
-library(knitr)
-library(kableExtra)
 library(gridExtra)
 
 file.names <- dir('./performance_measures')
 
 allbiasrows <- data.frame()
-allRMSErows <- data.frame()
+allMSErows <- data.frame()
 allcovrows <- data.frame()
+allempSErows <- data.frame()
+allmodSErows <- data.frame()
 for (i in 1:length(file.names)) {
   
-  load(file.names[i])
+  load(paste0('performance_measures/', file.names[i]))
   
   params <- results$params
   measures <- results$measures
   
+  if (params$r==1.0) {
+    pars <- c('theta', 'WPICC')
+    parnames <- c("$\\theta$", "$\\rho_1$")    
+  } else {
+    pars <- c('theta', 'WPICC', 'BPICC')
+    parnames <- c("$\\theta$", "$\\rho_1$", "$\\rho_2$")
+  }
+  
   # Bias values
   biasvals <- measures %>%
-    filter(measure %in% c('MCMC_mean_bias', 'REML_bias')) %>%
-    mutate(method=sapply(strsplit(measure, '_'), '[', 1)) %>% 
-    select(c(theta, WPICC, BPICC, method))
+    filter(measure %in% c('bias', 'MCSE_bias')) %>%
+    select(c(all_of(pars), measure, method))
   biasrows <- cbind(params, biasvals)
   allbiasrows <- rbind(allbiasrows, biasrows)
   # May need to format values with desired number of digits here
   # as Format() in tables package doesn't seem to work
   
-  # RMSE values
-  RMSEvals <- measures %>%
-    filter(measure %in% c('MCMC_mean_mse', 'REML_mse')) %>%
-    mutate(method=sapply(strsplit(measure, '_'), '[', 1)) %>%
-    select(c(theta, WPICC, BPICC, method))
-  RMSErows <- cbind(params, RMSEvals)
-  allRMSErows <- rbind(allRMSErows, RMSErows)
+  # MSE values
+  MSEvals <- measures %>%
+    filter(measure %in% c('MSE', 'MCSE_MSE')) %>%
+    select(c(all_of(pars), measure, method))
+  MSErows <- cbind(params, MSEvals)
+  allMSErows <- rbind(allMSErows, MSErows)
   
   # Coverage values
   covvals <- measures %>%
-    filter(measure %in% c('MCMC_coverage', 'REML_coverage')) %>%
-    mutate(method=sapply(strsplit(measure, '_'), '[', 1)) %>%
-    select(c(theta, method))
+    filter(measure %in% c('coverage', 'MCSE_coverage')) %>%
+    select(c(theta, measure, method))
   covrows <- cbind(params, covvals)
   allcovrows <- rbind(allcovrows, covrows)
   
-  # TODO: Include empirical and model-based SE
+  # Empirical SE
+  empSEvals <- measures %>%
+    filter(measure %in% c('empSE', 'MCSE_empSE')) %>%
+    select(c(all_of(pars), measure, method))
+  empSErows <- cbind(params, empSEvals)
+  allempSErows <- rbind(allempSErows, empSErows)
+  
+  # Average model-based SE
+  modSEvals <- measures %>%
+    filter(measure %in% c('avgmodSE', 'MCSE_avgmodSE')) %>%
+    select(c(all_of(pars), measure, method))
+  modSErows <- cbind(params, modSEvals)
+  allmodSErows <- rbind(allmodSErows, modSErows)
 }
 
 # Convert results to long format for formatting into a table
 biasdf <- allbiasrows %>%
   pivot_longer(
-    cols=c(theta, WPICC, BPICC),
+    cols=all_of(pars),
     names_to='parameters',
-    values_to='bias'
+    values_to='value'
+  ) %>%
+  pivot_wider(
+    names_from='measure',
+    values_from='value'
+  ) %>%
+  rename(c(value = bias, MCSE = MCSE_bias))
+
+MSEdf <- allMSErows %>%
+  pivot_longer(
+    cols=all_of(pars),
+    names_to='parameters',
+    values_to='value'
+  ) %>%
+  pivot_wider(
+    names_from='measure',
+    values_from='value'
+  ) %>%
+  rename(c(value = MSE, MCSE = MCSE_MSE))
+
+covdf <- allcovrows %>%
+  pivot_longer(
+    cols=all_of(pars),
+    names_to='parameters',
+    values_to='value'
   )
 
-RMSEdf <- allRMSErows %>%
+empSEdf <- allempSErows %>%
   pivot_longer(
-    cols=c(theta, WPICC, BPICC),
+    cols=all_of(pars),
     names_to='parameters',
-    values_to='RMSE'
+    values_to='value'
+  )
+
+modSEdf <- allmodSErows %>%
+  pivot_longer(
+    cols=all_of(pars),
+    names_to='parameters',
+    values_to='value'
   )
 
 # Create formatted results table
@@ -75,7 +123,8 @@ dat <- expand.grid(
   m = c(10, 100),
   rho1 = c(0.05, 0.1),
   r = 0.8,
-  method = c('MCMC', 'REML')
+  method = c('MCMC', 'REML'),
+  measure = c('bias', 'MCSE_bias')
 )
 dat$theta <- rnorm(dim(dat)[1])
 dat$WPICC <- rnorm(dim(dat)[1])
@@ -83,31 +132,49 @@ dat$BPICC <- rnorm(dim(dat)[1])
 
 biasdf <- dat %>%
   pivot_longer(
-    cols=c(theta, WPICC, BPICC),
+    cols=all_of(pars),
     names_to='parameters',
-    values_to='bias'
-  )
+    values_to='value'
+  ) %>%
+  pivot_wider(
+    names_from='measure',
+    values_from='value'
+  ) %>%
+  rename(c(value = bias, MCSE = MCSE_bias))
 
 # Create Latex code for generating table
-toLatex(
-  tabular(
-    RowFactor(rho1, spacing=1)
-    * RowFactor(Tp, spacing=1)
-    * RowFactor(m, spacing=1)
-    * Factor(S)
-    ~ Heading()*RowFactor(parameters)
-    * Heading()*RowFactor(method)
-    * Heading()*bias
-    * Heading()*identity,
-    data=biasdf
-  )
-)
+fmtmain <- function(x, digits){
+  s <- format(x, digits=digits)
+  s <- latexNumeric(s)
+  s
+}
 
-# kable and kableExtra don't seem to be able to generate
-# Latex code and can't seem to handle nested columns and rows as well
-kbl(biasdf, booktabs=T) %>%
-  kable_styling() %>%
-  collapse_rows(columns=1:4, valign="top")
+fmtMCSE <- function(x, digits){
+  s <- format(x, digits=digits)
+  sf <- sprintf("$(%s)$", s)
+  sf
+}
+
+create_Latex_table <- function(df, maindigits=1, MCSEdigits=1) {
+  toLatex(
+    tabular(
+      RowFactor(rho1, name="$\\rho_1$", spacing=1)
+      * RowFactor(Tp, name="T", spacing=1)
+      * RowFactor(m, spacing=1)
+      * Factor(S)
+      ~ Heading()*RowFactor(factor(parameters, levels=pars), levelnames=parnames)
+      * Heading()*RowFactor(method)
+      * Heading()*(Format(fmtmain(digits=maindigits))*value +
+                   Format(fmtMCSE(digits=MCSEdigits))*MCSE)
+      * Heading()*identity,
+      data=df
+    )
+  )
+}
+
+create_Latex_table(biasdf)
+
+create_Latex_table(MSEdf, maindigits=2, MCSEdigits=2)
 
 
 # Plot contents of results table
