@@ -22,6 +22,7 @@ transformed parameters {
   // we also want draws for our implied variance components
   real<lower=0> sig_sq_cluster = CAC * sig_sq_subject * WPICC / (1 - WPICC);
   real<lower=0> sig_sq_cp = sig_sq_subject * WPICC / (1 - WPICC) - sig_sq_cluster;
+  real<lower=0,upper=1> BPICC = WPICC * CAC;
   vector[Q] mu;
   for (i in 1:clusters){
     for (j in 1:periods){

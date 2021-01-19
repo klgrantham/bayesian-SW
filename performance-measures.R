@@ -303,17 +303,12 @@ reduce_nth_results <- function(n, clust_per_seq, periods, subjects, WPICC, CAC, 
   )
   
   load(file=paste0('results/MCMC', config, '.Rda'))
-  # Contains: fit (MCMC), parvals (true values)
+  # Contains: fit (MCMC), parvals (true values), diagnostics
   load(file=paste0('results/REML', config, '.Rda'))
   # Contains: remlfit (REML), parvals (true values)
   
   # Get number of divergent transitions
-  div <- 0
-  chains <- dim(fit)[2] # Extract number of chains from fit
-  for (ch in 1:chains) {
-    divergent <- get_sampler_params(fit, inc_warmup=FALSE)[[ch]][,'divergent__']
-    div <- div + sum(divergent)
-  }
+  div <- diagnostics$ndiv_trans
 
   # Extract inference
   
@@ -374,12 +369,8 @@ reduce_nth_results <- function(n, clust_per_seq, periods, subjects, WPICC, CAC, 
     }
     
     # Extract post-warmup MCMC draws for relevant parameters
-    pars <- c('theta', 'WPICC', 'CAC', 'sig_sq_subject', 'sig_sq_cluster', 'sig_sq_cp')
+    pars <- c('theta', 'WPICC', 'CAC', 'BPICC', 'sig_sq_subject', 'sig_sq_cluster', 'sig_sq_cp')
     post <- as.data.frame(fit, pars=pars)
-    
-    # Derive BPICC posterior from posterior draws
-    post$BPICC <- post$WPICC * post$CAC
-    pars <- c(pars, 'BPICC')
   }
   
   REML_res <- data.frame(
@@ -419,8 +410,7 @@ reduce_nth_results <- function(n, clust_per_seq, periods, subjects, WPICC, CAC, 
   )
   
   # Retrieve true parameter values
-  parvals <- c(parvals, BPICC=WPICC*CAC)
-  truevals <- as.data.frame(parvals[pars])
+  truevals <- parvals[pars]
   
   res <- list(
     MCMC_res = MCMC_res,

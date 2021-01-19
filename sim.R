@@ -49,6 +49,9 @@ fit_models <- function(params, stanmod, seedval){
   # implied between-cluster-period variance
   sig_sq_cp <- sig_sq_subject * WPICC / (1 - WPICC) - sig_sq_cluster
   
+  # implied between-period intracluster correlation
+  BPICC <- WPICC * CAC
+  
   # implied number of clusters
   clusters <- clust_per_seq*(periods-1)
   
@@ -69,15 +72,15 @@ fit_models <- function(params, stanmod, seedval){
     }
   }
   
-  parvals <- list(
+  parvals <- data.frame(
     clust_per_seq = clust_per_seq,
     periods = periods,
     subjects = subjects,
-    sig_sq_subject = sig_sq_subject,
+    theta = theta,
     WPICC = WPICC,
     CAC = CAC,
-    theta = theta,
-    per = per,
+    BPICC = BPICC,
+    sig_sq_subject = sig_sq_subject,
     sig_sq_cluster = sig_sq_cluster,
     sig_sq_cp = sig_sq_cp
   )
@@ -91,7 +94,7 @@ fit_models <- function(params, stanmod, seedval){
   if (CAC==1.0) {
     pars <- c('theta', 'WPICC', 'sig_sq_subject', 'sig_sq_cluster')
   } else {
-    pars <- c('theta', 'WPICC', 'CAC', 'sig_sq_subject', 'sig_sq_cluster', 'sig_sq_cp')
+    pars <- c('theta', 'WPICC', 'CAC', 'BPICC', 'sig_sq_subject', 'sig_sq_cluster', 'sig_sq_cp')
   }
   
   # Bayesian model
@@ -142,20 +145,50 @@ fit_models <- function(params, stanmod, seedval){
   time.taken <- end.time - start.time
   print(paste('REML fit took:', format(time.taken, digits=4)))
   
-  # Inference
+  # Diagnostics
   
   start.time <- Sys.time()
   
-  print(fit, pars=pars)
-
+  draws <- as.array(fit, pars=pars)
+  mon <- monitor(draws, warmup=0)
+  vals <- mon[1:(dim(mon)[1]), c('Rhat', 'Bulk_ESS', 'Tail_ESS')]
+  print(vals)
+  convergence_check <- NULL
+  if (any(vals$Rhat > 1.01) | any(vals$Bulk_ESS < 400) | any(vals$Tail_ESS < 400)){
+    convergence_check <- 'FAIL'
+    print('Suspected convergence issue. Needs further investigation')
+  } else{
+    convergence_check <- 'PASS'
+  }
+  
   div <- 0
   chains <- dim(fit)[2] # Extract number of chains from fit
   for (ch in 1:chains) {
     divergent <- get_sampler_params(fit, inc_warmup=FALSE)[[ch]][,'divergent__']
     div <- div + sum(divergent)
   }
+  div_trans_check <- NULL
+  if (div > 0){
+    div_trans_check <- 'FAIL'
+  } else{
+    div_trans_check <- 'PASS'
+  }
   print(paste('Divergent transitions:', div))
   
+  diagnostics <- data.frame(convergence_check=convergence_check,
+                            div_trans_check=div_trans_check,
+                            ndiv_trans=div)
+  
+  end.time <- Sys.time()
+  time.taken <- end.time - start.time
+  print(paste('Diagnostics checks took:', format(time.taken, digits=4)))
+
+  # Inference
+  
+  start.time <- Sys.time()
+  
+  print(fit, pars=pars)
+
   print(summary(remlfit))
   
   end.time <- Sys.time()
@@ -181,14 +214,28 @@ fit_models <- function(params, stanmod, seedval){
   
   # Save MCMC results
   save(
-    list=c('fit', 'parvals'),
+    list=c('fit', 'parvals', 'diagnostics'),
     file=paste0(
       'results/',
       'MCMC',
       config,
       '.Rda'
     )
-  )  
+  )
+  
+  # Save copy of MCMC results that fail diagnostics checks for review
+  if (diagnostics$convergence_check=='FAIL' | diagnostics$div_trans_check=='FAIL'){
+    dir.create('review')
+    save(
+      list=c('fit', 'parvals', 'diagnostics'),
+      file=paste0(
+        'review/',
+        'MCMC',
+        config,
+        '.Rda'
+      )
+    )
+  }
 
   # Save REML results
   save(
