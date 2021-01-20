@@ -6,10 +6,9 @@
 
 v <- Sys.getenv('SLURM_ARRAY_TASK_ID', NA)
 vn <- as.integer(v)
-row <- vn + 1
-print(sprintf('We will run job #%d',row))
-params <- read.csv('parameters.csv')
-myparams = params[row,]
+print(sprintf('We will run job #%d', vn))
+params <- read.csv('parameters_batched.csv')
+myparams = params[params$task_id==vn,]
 print('We will use the params:')
 print(myparams)
 
@@ -30,7 +29,7 @@ time.taken <- end.time - start.time
 print(paste('Compile Stan took:', format(time.taken, digits=4)))
 
 start.time.reps <- Sys.time()
-for (i in 1:2) {
+for (i in myparams$start:myparams$end) {
   start.time <- Sys.time()
   fit_models(myparams, stanmod, i)
   end.time <- Sys.time()
