@@ -12,6 +12,15 @@ WPICC <- c(0.05, 0.1)
 CAC <- c(1.0, 0.8)
 theta <- c(0)
 
-parvals <- expand.grid(clust_per_seq=clust_per_seq, periods=periods,
-                       subjects=subjects, WPICC=WPICC, CAC=CAC, theta=theta)
+parvals <- expand.grid(
+  subjects=subjects,
+  periods=periods,
+  clust_per_seq=clust_per_seq,
+  WPICC=WPICC,
+  CAC=CAC,
+  theta=theta
+)
+
+parvals <- parvals %>% arrange(subjects) %>% arrange(periods)
+
 write.csv(parvals, 'parameters.csv', row.names=FALSE)
