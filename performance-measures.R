@@ -157,6 +157,8 @@ calculate_measures <- function(clust_per_seq, periods, subjects, WPICC, CAC, the
 collate_results <- function(Nrep, clust_per_seq, periods, subjects, WPICC, CAC, theta) {
   # Collate results across (valid) replicates and save estimates
   
+  dir.create('estimates')
+  
   MCMC_means <- data.frame()
   MCMC_medians <- data.frame()
   MCMC_sds <- data.frame()
@@ -252,8 +254,6 @@ collate_results <- function(Nrep, clust_per_seq, periods, subjects, WPICC, CAC, 
     nonzerovar = nonzerovar
   )
   
-  dir.create('estimates')
-
   save(
     'est',
     file=paste0(
@@ -267,6 +267,8 @@ collate_results <- function(Nrep, clust_per_seq, periods, subjects, WPICC, CAC, 
 
 reduce_all_results <- function(Nrep, clust_per_seq, periods, subjects, WPICC, CAC, theta) {
   # Reduce all results files for a particular trial and parameter configuration
+  
+  dir.create('reduced_results')
   
   for (n in 1:Nrep) {
     reduce_nth_results(n, clust_per_seq, periods, subjects, WPICC, CAC, theta)
@@ -397,8 +399,6 @@ reduce_nth_results <- function(n, clust_per_seq, periods, subjects, WPICC, CAC, 
     div = div,
     zerovar = zerovar
   )
-  
-  dir.create('reduced_results')
   
   save(
     'res',
