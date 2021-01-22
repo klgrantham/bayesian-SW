@@ -5,16 +5,20 @@
 
 library(rstan)
 library(lme4)
+library(parameters)
 
 fit_models <- function(params, stanmod, seedval){
   # Inputs:
   #   params - a data frame containing input parameters for one particular
   #            simulation configuration
   # Outputs:
-  #   MCMC_[config].Rda - saves an R data file containing the fitted MCMC model
-  #                       (fit) and true parameter values (parvals)
-  #   REML_[config].Rda - saves an R data file containing the fitted REML model
-  #                       (remlfit) and true parameter values (parvals)
+  #   MCMC_[config].Rda - saves an R data file containing the MCMC posterior
+  #                       draws (sumreml), true parameter values (parvals), and
+  #                       diagnostics (results of diagnostic checks and number
+  #                       of divergent transitions)
+  #   REML_[config].Rda - saves an R data file containing the summary of the
+  #                       fitted REML model (remlfit), true parameter values
+  #                       (parvals), confint (KR 95% CI), and adj_SE (KR-adjusted SE)
   
   set.seed(seedval)
   
@@ -188,8 +192,16 @@ fit_models <- function(params, stanmod, seedval){
   start.time <- Sys.time()
   
   print(fit, pars=pars)
+  
+  # Get posterior draws for parameters of interest
+  draws <- as.data.frame(fit, pars=pars)
 
-  print(summary(remlfit))
+  sumreml <- summary(remlfit)
+  print(sumreml)
+  
+  # Get KR adjustments using REML fit
+  confint <- ci_kenward(remlfit, ci=0.95)
+  adj_SE <- se_kenward(remlfit)
   
   end.time <- Sys.time()
   time.taken <- end.time - start.time
@@ -214,7 +226,7 @@ fit_models <- function(params, stanmod, seedval){
   
   # Save MCMC results
   save(
-    list=c('fit', 'parvals', 'diagnostics'),
+    list=c('draws', 'parvals', 'diagnostics'),
     file=paste0(
       'results/',
       'MCMC',
@@ -223,7 +235,7 @@ fit_models <- function(params, stanmod, seedval){
     )
   )
   
-  # Save copy of MCMC results that fail diagnostics checks for review
+  # Save full results for MCMC fits that fail diagnostics checks for review
   if (diagnostics$convergence_check=='FAIL' | diagnostics$div_trans_check=='FAIL'){
     dir.create('review')
     save(
@@ -239,7 +251,7 @@ fit_models <- function(params, stanmod, seedval){
 
   # Save REML results
   save(
-    list=c('remlfit', 'parvals'),
+    list=c('sumreml', 'parvals', 'confint', 'adj_SE'),
     file=paste0(
       'results/',
       'REML',

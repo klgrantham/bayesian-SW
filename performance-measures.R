@@ -291,9 +291,9 @@ reduce_nth_results <- function(n, clust_per_seq, periods, subjects, WPICC, CAC, 
   )
   
   load(file=paste0('results/MCMC', config, '.Rda'))
-  # Contains: fit (MCMC), parvals (true values), diagnostics
+  # Contains: draws (MCMC posterior draws), parvals (true values), diagnostics
   load(file=paste0('results/REML', config, '.Rda'))
-  # Contains: remlfit (REML), parvals (true values)
+  # Contains: sumreml (REML fit summary), parvals (true values), confint (KR 95% CI), adj_SE (KR-adjusted SE)
   
   # Get number of divergent transitions
   div <- diagnostics$ndiv_trans
@@ -301,24 +301,21 @@ reduce_nth_results <- function(n, clust_per_seq, periods, subjects, WPICC, CAC, 
   # Extract inference
   
   # Extract estimates from REML model
-  REML_theta_est <- coef(summary(remlfit))['treat','Estimate']
-  # Point estimate only: fixef(remlfit)['treat']
-  REML_theta_stderr <- coef(summary(remlfit))['treat','Std. Error']
+  REML_theta_est <- coef(sumreml)['treat','Estimate']
+  REML_theta_stderr <- coef(sumreml)['treat','Std. Error']
   
-  # Calculate 95% confidence interval for theta using Kenward Roger correction
-  confint <- ci_kenward(remlfit, ci=0.95)
+  # Get 95% confidence interval for theta using Kenward Roger correction
   theta_CI_KR_low <- confint[confint$Parameter=='treat','CI_low']
   theta_CI_KR_high <- confint[confint$Parameter=='treat','CI_high']
   
   # Get KR-adjusted standard error for theta
-  adj_SE <- se_kenward(remlfit)
   theta_SE_KR <- adj_SE[adj_SE$Parameter=='treat','SE']
 
   # Combine post-warmup posterior draws across chains
   if (CAC==1.0) {
-    varcomps <- as.data.frame(VarCorr(remlfit))
-    REML_sig_sq_c <- varcomps[1, 'vcov']
-    REML_sig_sq_e <- varcomps[2, 'vcov']
+    varcomps <- as.data.frame(sumreml$varcor)
+    REML_sig_sq_c <- varcomps$vcov[varcompsdf$grp=='clust']
+    REML_sig_sq_e <- varcomps$vcov[varcompsdf$grp=='Residual']
     REML_WPICC <- REML_sig_sq_c / (REML_sig_sq_c + REML_sig_sq_e)
     
     est <- c(REML_theta_est, REML_WPICC, REML_sig_sq_e, REML_sig_sq_c)
@@ -329,15 +326,11 @@ reduce_nth_results <- function(n, clust_per_seq, periods, subjects, WPICC, CAC, 
     } else {
       zerovar <- FALSE
     }
-    
-    # Extract post-warmup MCMC draws for relevant parameters
-    pars <- c('theta', 'WPICC', 'sig_sq_subject', 'sig_sq_cluster')
-    post <- as.data.frame(fit, pars=pars)
   } else {
-    varcomps <- as.data.frame(VarCorr(remlfit))
-    REML_sig_sq_cp <- varcomps[1, 'vcov']
-    REML_sig_sq_c <- varcomps[2, 'vcov']
-    REML_sig_sq_e <- varcomps[3, 'vcov']
+    varcomps <- as.data.frame(sumreml$varcor)
+    REML_sig_sq_cp <- varcomps$vcov[varcompsdf$grp=='clustper']
+    REML_sig_sq_c <- varcomps$vcov[varcompsdf$grp=='clust']
+    REML_sig_sq_e <- varcomps$vcov[varcompsdf$grp=='Residual']
     sum_c_cp <- (REML_sig_sq_c + REML_sig_sq_cp)
     REML_WPICC <- sum_c_cp / (sum_c_cp + REML_sig_sq_e)
     REML_CAC <- REML_sig_sq_c / sum_c_cp
@@ -355,15 +348,13 @@ reduce_nth_results <- function(n, clust_per_seq, periods, subjects, WPICC, CAC, 
     } else {
       zerovar <- FALSE
     }
-    
-    # Extract post-warmup MCMC draws for relevant parameters
-    pars <- c('theta', 'WPICC', 'CAC', 'BPICC', 'sig_sq_subject', 'sig_sq_cluster', 'sig_sq_cp')
-    post <- as.data.frame(fit, pars=pars)
   }
+  
+  pars <- colnames(draws)
   
   REML_res <- data.frame(
     est=est,
-    stderr=c(REML_theta_stderr, rep(NA, (length(pars)-1))),
+    stderr=c(REML_theta_stderr, rep(NA, length(pars)-1)),
     stderrKR=c(theta_SE_KR, rep(NA, length(pars)-1)),
     CI_KR_lower=c(theta_CI_KR_low, rep(NA, length(pars)-1)),
     CI_KR_upper=c(theta_CI_KR_high, rep(NA, length(pars)-1)),
@@ -371,20 +362,20 @@ reduce_nth_results <- function(n, clust_per_seq, periods, subjects, WPICC, CAC, 
   )
 
   # Posterior means
-  MCMC_means <- apply(post, 2, mean)
+  MCMC_means <- apply(draws, 2, mean)
 
   # Posterior medians
-  MCMC_medians <- apply(post, 2, quantile, probs=0.5)
+  MCMC_medians <- apply(draws, 2, quantile, probs=0.5)
   
   # Standard deviation of marginal posterior distributions
-  MCMC_sds <- apply(post, 2, sd)
+  MCMC_sds <- apply(draws, 2, sd)
   
   # 95% credible intervals from 2.5% and 97.5% percentiles of posterior draws
-  MCMC_credints <- apply(post, 2, quantile, probs=c(0.025, 0.975))
+  MCMC_credints <- apply(draws, 2, quantile, probs=c(0.025, 0.975))
   
   # Posterior probability: P(theta > 0)
   # Calculate proportion of posterior draws for theta that are greater than 0
-  prop <- sum(post$theta > 0)/length(post$theta)
+  prop <- sum(draws$theta > 0)/length(draws$theta)
   # Is this probability greater than cutoff C=0.975?
   MCMC_greaterthanC <- (prop > 0.975)
   
@@ -394,7 +385,7 @@ reduce_nth_results <- function(n, clust_per_seq, periods, subjects, WPICC, CAC, 
     post_sd=MCMC_sds,
     post_025=MCMC_credints['2.5%',],
     post_975=MCMC_credints['97.5%',],
-    theta_greaterthanC=c(MCMC_greaterthanC, rep(NA, (length(pars)-1)))
+    theta_greaterthanC=c(MCMC_greaterthanC, rep(NA, length(pars)-1))
   )
   
   # Retrieve true parameter values
