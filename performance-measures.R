@@ -5,7 +5,6 @@
 library(rstan)
 library(lme4)
 library(tidyverse)
-library(parameters)
 
 calculate_measures <- function(clust_per_seq, periods, subjects, WPICC, CAC, theta) {
   # Calculate performance measures with estimates datasets and save results
@@ -314,8 +313,8 @@ reduce_nth_results <- function(n, clust_per_seq, periods, subjects, WPICC, CAC, 
   # Combine post-warmup posterior draws across chains
   if (CAC==1.0) {
     varcomps <- as.data.frame(sumreml$varcor)
-    REML_sig_sq_c <- varcomps$vcov[varcompsdf$grp=='clust']
-    REML_sig_sq_e <- varcomps$vcov[varcompsdf$grp=='Residual']
+    REML_sig_sq_c <- varcomps$vcov[varcomps$grp=='clust']
+    REML_sig_sq_e <- varcomps$vcov[varcomps$grp=='Residual']
     REML_WPICC <- REML_sig_sq_c / (REML_sig_sq_c + REML_sig_sq_e)
     
     est <- c(REML_theta_est, REML_WPICC, REML_sig_sq_e, REML_sig_sq_c)
@@ -328,9 +327,9 @@ reduce_nth_results <- function(n, clust_per_seq, periods, subjects, WPICC, CAC, 
     }
   } else {
     varcomps <- as.data.frame(sumreml$varcor)
-    REML_sig_sq_cp <- varcomps$vcov[varcompsdf$grp=='clustper']
-    REML_sig_sq_c <- varcomps$vcov[varcompsdf$grp=='clust']
-    REML_sig_sq_e <- varcomps$vcov[varcompsdf$grp=='Residual']
+    REML_sig_sq_cp <- varcomps$vcov[varcomps$grp=='clustper']
+    REML_sig_sq_c <- varcomps$vcov[varcomps$grp=='clust']
+    REML_sig_sq_e <- varcomps$vcov[varcomps$grp=='Residual']
     sum_c_cp <- (REML_sig_sq_c + REML_sig_sq_cp)
     REML_WPICC <- sum_c_cp / (sum_c_cp + REML_sig_sq_e)
     REML_CAC <- REML_sig_sq_c / sum_c_cp

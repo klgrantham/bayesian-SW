@@ -8,7 +8,7 @@ v <- Sys.getenv('SLURM_ARRAY_TASK_ID', NA)
 vn <- as.integer(v)
 print(sprintf('We will run job #%d', vn))
 params <- read.csv('parameters_batched.csv')
-myparams = params[params$task_id==vn,]
+myparams <- params[params$task_id==vn,]
 print('We will use the params:')
 print(myparams)
 
