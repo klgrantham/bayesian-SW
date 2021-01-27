@@ -6,6 +6,9 @@
 library(rstan)
 library(lme4)
 library(parameters)
+library(pbkrtest)
+
+dir.create('results')
 
 fit_models <- function(params, stanmod, seedval){
   # Inputs:
@@ -116,7 +119,7 @@ fit_models <- function(params, stanmod, seedval){
   )
   
   fit <- sampling(stanmod, data = data, pars = pars, iter = 6e3, warmup = 1e3,
-                  seed=seedval, control = list(adapt_delta = 0.9), cores=1)
+                  seed=seedval, control = list(adapt_delta = 0.95), cores=1)
   
   end.time <- Sys.time()
   time.taken <- end.time - start.time
@@ -140,9 +143,9 @@ fit_models <- function(params, stanmod, seedval){
   )
   
   if (CAC==1.0) {
-    remlfit <- lmer(Y ~ treat + per + (1 | clust), data=dat, REML = TRUE)
+    remlfit <- lmer(Y ~ treat + per + (1 | clust), data=dat, REML=TRUE)
   } else {
-    remlfit <- lmer(Y ~ treat + per + (1 | clust) + (1 | clustper), data=dat, REML = TRUE)
+    remlfit <- lmer(Y ~ treat + per + (1 | clust) + (1 | clustper), data=dat, REML=TRUE)
   }
   
   end.time <- Sys.time()
@@ -195,17 +198,65 @@ fit_models <- function(params, stanmod, seedval){
   
   # Get posterior draws for parameters of interest
   draws <- as.data.frame(fit, pars=pars)
+  
+  end.time <- Sys.time()
+  time.taken <- end.time - start.time
+  print(paste('MCMC inference took:', format(time.taken, digits=4)))
 
+  start.time <- Sys.time()
+  
   sumreml <- summary(remlfit)
   print(sumreml)
+  
+  end.time <- Sys.time()
+  time.taken <- end.time - start.time
+  print(paste('REML inference took:', format(time.taken, digits=4)))
+  
+  start.time <- Sys.time()
   
   # Get KR adjustments using REML fit
   confint <- ci_kenward(remlfit, ci=0.95)
   adj_SE <- se_kenward(remlfit)
   
+  tindex <- which(names(fixef(remlfit))=='treat')
+  
+  print("KR results from parameters package:")
+  print(paste0("(", confint[tindex, 'CI_low'], ",", confint[tindex, 'CI_high'], ")"))
+  print(adj_SE[tindex, 'SE'])
+  
   end.time <- Sys.time()
   time.taken <- end.time - start.time
-  print(paste('Inference took:', format(time.taken, digits=4)))
+  print(paste('KR adjustment (parameters) took:', format(time.taken, digits=4)))
+  
+  start.time <- Sys.time()
+  
+  # Get KR adjustments with pbkrtest package
+  vcov0 <- vcov(remlfit)
+  vcovKR <- vcovAdj(remlfit)
+  adj_SE_theta <- sqrt(vcovKR['treat','treat'])
+  L <- rep(0, length(fixef(remlfit)))
+  L[tindex] <- 1
+  adj_ddf <- Lb_ddf(L, vcov0, vcovKR)
+  
+  # TODO: Move the CI calculation to performance_measures.R once we verify
+  # that we get the same results as parameters package
+
+  # Get t test statistic with KR-adjusted ddf
+  alpha <- (1 + 0.95)/2
+  tstat <- qt(alpha, adj_ddf)
+  
+  # Construct 95% KR confidence intervals
+  est <- coef(sumreml)['treat','Estimate']
+  confintPBKR_lower <- est - tstat * adj_SE_theta
+  confintPBKR_upper <- est + tstat * adj_SE_theta
+  
+  print("KR results from pbkrtest package:")
+  print(paste0("(", confintPBKR_lower, ",", confintPBKR_upper, ")"))
+  print(adj_SE_theta)
+
+  end.time <- Sys.time()
+  time.taken <- end.time - start.time
+  print(paste('KR adjustment (pbkrtest) took:', format(time.taken, digits=4)))
   
   # Save only essential data and results
   
