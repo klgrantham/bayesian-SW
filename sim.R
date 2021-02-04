@@ -5,8 +5,9 @@
 
 library(rstan)
 library(lme4)
-library(parameters)
 library(pbkrtest)
+library(parameters)
+library(lmerTest)
 
 dir.create('results')
 
@@ -20,8 +21,9 @@ fit_models <- function(params, stanmod, seedval){
   #                       diagnostics (results of diagnostic checks and number
   #                       of divergent transitions)
   #   REML_[config].Rda - saves an R data file containing the summary of the
-  #                       fitted REML model (remlfit), true parameter values
-  #                       (parvals), confint (KR 95% CI), and adj_SE (KR-adjusted SE)
+  #                       fitted REML model (sumreml), true parameter values
+  #                       (parvals), adj_SE and adj_ddf (KR-adjusted for all
+  #                       but largest configuration)
   
   set.seed(seedval)
   
@@ -157,7 +159,7 @@ fit_models <- function(params, stanmod, seedval){
   start.time <- Sys.time()
   
   draws <- as.array(fit, pars=pars)
-  mon <- monitor(draws, warmup=0)
+  mon <- monitor(draws, warmup=0, print=FALSE)
   vals <- mon[1:(dim(mon)[1]), c('Rhat', 'Bulk_ESS', 'Tail_ESS')]
   print(vals)
   convergence_check <- NULL
@@ -212,51 +214,31 @@ fit_models <- function(params, stanmod, seedval){
   time.taken <- end.time - start.time
   print(paste('REML inference took:', format(time.taken, digits=4)))
   
-  start.time <- Sys.time()
   
-  # Get KR adjustments using REML fit
-  confint <- ci_kenward(remlfit, ci=0.95)
-  adj_SE <- se_kenward(remlfit)
-  
-  tindex <- which(names(fixef(remlfit))=='treat')
-  
-  print("KR results from parameters package:")
-  print(paste0("(", confint[tindex, 'CI_low'], ",", confint[tindex, 'CI_high'], ")"))
-  print(adj_SE[tindex, 'SE'])
-  
-  end.time <- Sys.time()
-  time.taken <- end.time - start.time
-  print(paste('KR adjustment (parameters) took:', format(time.taken, digits=4)))
-  
-  start.time <- Sys.time()
-  
-  # Get KR adjustments with pbkrtest package
-  vcov0 <- vcov(remlfit)
-  vcovKR <- vcovAdj(remlfit)
-  adj_SE_theta <- sqrt(vcovKR['treat','treat'])
-  L <- rep(0, length(fixef(remlfit)))
-  L[tindex] <- 1
-  adj_ddf <- Lb_ddf(L, vcov0, vcovKR)
-  
-  # TODO: Move the CI calculation to performance_measures.R once we verify
-  # that we get the same results as parameters package
-
-  # Get t test statistic with KR-adjusted ddf
-  alpha <- (1 + 0.95)/2
-  tstat <- qt(alpha, adj_ddf)
-  
-  # Construct 95% KR confidence intervals
-  est <- coef(sumreml)['treat','Estimate']
-  confintPBKR_lower <- est - tstat * adj_SE_theta
-  confintPBKR_upper <- est + tstat * adj_SE_theta
-  
-  print("KR results from pbkrtest package:")
-  print(paste0("(", confintPBKR_lower, ",", confintPBKR_upper, ")"))
-  print(adj_SE_theta)
-
-  end.time <- Sys.time()
-  time.taken <- end.time - start.time
-  print(paste('KR adjustment (pbkrtest) took:', format(time.taken, digits=4)))
+  if (clusters*periods*subjects>15000) {
+    print("Skipping KR adjustment")
+    
+    adj_SE <- coef(sumreml)['treat','Std. Error']
+    
+    # Get Satterthwaite adjusted ddf using parameters (and lmerTest) packages
+    # Note: Could not resolve error when using pbkrtest's SATmodcomp() 
+    adj_ddf <- dof_satterthwaite(remlfit)['treat'][[1]]
+  } else {
+    start.time <- Sys.time()
+    
+    # Get KR adjustments with pbkrtest package
+    vcov0 <- vcov(remlfit)
+    vcovKR <- vcovAdj(remlfit)
+    adj_SE <- sqrt(vcovKR['treat','treat'])
+    
+    L <- rep(0, length(fixef(remlfit)))
+    L[which(names(fixef(remlfit))=='treat')] <- 1
+    adj_ddf <- Lb_ddf(L, vcov0, vcovKR)
+    
+    end.time <- Sys.time()
+    time.taken <- end.time - start.time
+    print(paste('KR adjustment (pbkrtest) took:', format(time.taken, digits=4)))
+  }
   
   # Save only essential data and results
   
@@ -302,7 +284,7 @@ fit_models <- function(params, stanmod, seedval){
 
   # Save REML results
   save(
-    list=c('sumreml', 'parvals', 'confint', 'adj_SE'),
+    list=c('sumreml', 'parvals', 'adj_SE', 'adj_ddf'),
     file=paste0(
       'results/',
       'REML',
