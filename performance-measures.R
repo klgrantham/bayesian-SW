@@ -306,11 +306,18 @@ reduce_nth_results <- function(n, clust_per_seq, periods, subjects, WPICC, CAC, 
   REML_theta_stderr <- coef(sumreml)['treat','Std. Error']
   
   # Get 95% confidence interval for theta using Kenward Roger correction
-  theta_CI_KR_low <- confint[confint$Parameter=='treat','CI_low']
-  theta_CI_KR_high <- confint[confint$Parameter=='treat','CI_high']
+  
+  # Get t test statistic with KR-adjusted ddf
+  alpha <- (1 + 0.95)/2
+  tstat <- qt(alpha, adj_ddf)
+  
+  # Construct 95% KR confidence intervals
+  est <- coef(sumreml)['treat','Estimate']
+  theta_CI_KR_low <- est - tstat * adj_SE
+  theta_CI_KR_high <- est + tstat * adj_SE
   
   # Get KR-adjusted standard error for theta
-  theta_SE_KR <- adj_SE[adj_SE$Parameter=='treat','SE']
+  theta_SE_KR <- adj_SE
 
   # Combine post-warmup posterior draws across chains
   if (CAC==1.0) {
