@@ -131,8 +131,8 @@ p4 <- plotminigrid(
 # Combine grid plots
 mylegend <- g_legend(p1)
 title <- expression(paste("Bias of ", hat(theta)))
-make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
-ggsave("plots/bias_theta.jpg", p, width=9, height=7, units="in", dpi=800)
+p_bias_theta <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
+ggsave("plots/bias_theta.jpg", p_bias_theta, width=9, height=7, units="in", dpi=800)
 
 
 ## Plot bias for WPICC (rho1)
@@ -195,8 +195,8 @@ p4 <- plotminigrid(
 # Combine grid plots
 mylegend <- g_legend(p1)
 title <- expression(paste("Bias of ", hat(rho[1])))
-p <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
-ggsave("plots/bias_WPICC.jpg", p, width=9, height=7, units="in", dpi=800)
+p_bias_WPICC <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
+ggsave("plots/bias_WPICC.jpg", p_bias_WPICC, width=9, height=7, units="in", dpi=800)
 
 
 ## Plot bias for BPICC (rho2)
@@ -236,8 +236,8 @@ p2 <- plotminigrid(
 # Combine grid plots
 mylegend <- g_legend(p1)
 title <- expression(paste("Bias of ", hat(rho[2])))
-p <- make_1x2_multiplot(p1, p2, mylegend, title)
-ggsave("plots/bias_BPICC.jpg", p, width=9, height=7, units="in", dpi=800)
+p_bias_BPICC <- make_1x2_multiplot(p1, p2, mylegend, title)
+ggsave("plots/bias_BPICC.jpg", p_bias_BPICC, width=9, height=7, units="in", dpi=800)
 
 
 ## Plot MSE for theta
@@ -290,8 +290,8 @@ p4 <- plotminigrid(
 # Combine grid plots
 mylegend <- g_legend(p1)
 title <- expression(paste("MSE of ", hat(theta)))
-p <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
-ggsave("plots/MSE_theta.jpg", p, width=9, height=7, units="in", dpi=800)
+p_MSE_theta <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
+ggsave("plots/MSE_theta.jpg", p_MSE_theta, width=9, height=7, units="in", dpi=800)
 
 
 ## Plot MSE for WPICC
@@ -344,6 +344,287 @@ p4 <- plotminigrid(
 # Combine grid plots
 mylegend <- g_legend(p1)
 title <- expression(paste("MSE of ", hat(rho[1])))
-p <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
-ggsave("plots/MSE_WPICC.jpg", p, width=9, height=7, units="in", dpi=800)
+p_MSE_WPICC <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
+ggsave("plots/MSE_WPICC.jpg", p_MSE_WPICC, width=9, height=7, units="in", dpi=800)
 
+
+## Plot MSE for BPICC
+
+# Determine common y-axis limits
+maxMSEHG <- signif(
+  MSEdfHG %>%
+    filter(parameters=='BPICC') %>%
+    summarise(max(value)),
+  2)
+maxMSEHH <- signif(
+  MSEdfHH %>%
+    filter(parameters=='BPICC') %>%
+    summarise(max(value)),
+  2)
+ylims <- c(0, max(maxMSEHG, maxMSEHH))
+
+# Get separate results blocks for plotting
+MSEdf_WPICC5_CAC80_BPICC <- MSEdfHG %>%
+  filter(rho1==0.05 & r==0.8 & parameters=='BPICC')
+MSEdf_WPICC10_CAC80_BPICC <- MSEdfHG %>%
+  filter(rho1==0.1 & r==0.8 & parameters=='BPICC')
+MSEdf_WPICC5_CAC100_BPICC <- MSEdfHH %>%
+  filter(rho1==0.05 & r==1.0 & parameters=='BPICC')
+MSEdf_WPICC10_CAC100_BPICC <- MSEdfHH %>%
+  filter(rho1==0.1 & r==1.0 & parameters=='BPICC')
+
+# Generate grid plots
+p1 <- plotminigrid(
+  MSEdf_WPICC5_CAC80_BPICC,
+  ylims=ylims,
+  title=expression(paste(rho[1], " = 0.05", ", r = 0.8"))
+)
+p2 <- plotminigrid(
+  MSEdf_WPICC10_CAC80_BPICC,
+  ylims=ylims,
+  title=expression(paste(rho[1], " = 0.1", ", r = 0.8"))
+)
+
+# Combine grid plots
+mylegend <- g_legend(p1)
+title <- expression(paste("MSE of ", hat(rho[2])))
+p_MSE_BPICC <- make_1x2_multiplot(p1, p2, mylegend, title)
+ggsave("plots/MSE_BPICC.jpg", p_MSE_BPICC, width=9, height=7, units="in", dpi=800)
+
+
+## Plot 95% confidence/credible interval coverage for theta
+
+# Determine common y-axis limits
+mincovHG <- signif(
+  covdfHG %>%
+    filter(parameters=='theta') %>%
+    summarise(min(value)),
+  2)
+mincovHH <- signif(
+  covdfHH %>%
+    filter(parameters=='theta') %>%
+    summarise(min(value)),
+  2)
+ylims <- c(min(mincovHG, mincovHH), 1.0)
+
+# Get separate results blocks for plotting
+covdf_WPICC5_CAC80_theta <- covdfHG %>%
+  filter(rho1==0.05 & r==0.8 & parameters=='theta')
+covdf_WPICC10_CAC80_theta <- covdfHG %>%
+  filter(rho1==0.1 & r==0.8 & parameters=='theta')
+covdf_WPICC5_CAC100_theta <- covdfHH %>%
+  filter(rho1==0.05 & r==1.0 & parameters=='theta')
+covdf_WPICC10_CAC100_theta <- covdfHH %>%
+  filter(rho1==0.1 & r==1.0 & parameters=='theta')
+
+# Generate grid plots
+p1 <- plotminigrid(
+  covdf_WPICC5_CAC80_theta,
+  ylims=ylims,
+  title=expression(paste(rho[1], " = 0.05", ", r = 0.8"))
+) + geom_hline(yintercept=0.95, linetype='dashed')
+p2 <- plotminigrid(
+  covdf_WPICC10_CAC80_theta,
+  ylims=ylims,
+  title=expression(paste(rho[1], " = 0.1", ", r = 0.8"))
+) + geom_hline(yintercept=0.95, linetype='dashed')
+p3 <- plotminigrid(
+  covdf_WPICC5_CAC100_theta,
+  ylims=ylims,
+  title=expression(paste(rho[1], " = 0.05", ", r = 1.0"))
+) + geom_hline(yintercept=0.95, linetype='dashed')
+p4 <- plotminigrid(
+  covdf_WPICC10_CAC100_theta,
+  ylims=ylims,
+  title=expression(paste(rho[1], " = 0.1", ", r = 1.0"))
+) + geom_hline(yintercept=0.95, linetype='dashed')
+
+# Combine grid plots
+mylegend <- g_legend(p1)
+title <- expression(paste("Confidence/credible interval coverage of ", hat(theta)))
+p_cov_theta <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
+ggsave("plots/cov_theta.jpg", p_cov_theta, width=9, height=7, units="in", dpi=800)
+
+
+## Plot empirical SE for theta
+
+# Determine common y-axis limits
+maxempSEHG <- signif(
+  empSEdfHG %>%
+    filter(parameters=='theta') %>%
+    summarise(max(value)),
+  2)
+maxempSEHH <- signif(
+  empSEdfHH %>%
+    filter(parameters=='theta') %>%
+    summarise(max(value)),
+  2)
+ylims <- c(0, max(maxempSEHG, maxempSEHH))
+
+# Get separate results blocks for plotting
+empSEdf_WPICC5_CAC80_theta <- empSEdfHG %>%
+  filter(rho1==0.05 & r==0.8 & parameters=='theta')
+empSEdf_WPICC10_CAC80_theta <- empSEdfHG %>%
+  filter(rho1==0.1 & r==0.8 & parameters=='theta')
+empSEdf_WPICC5_CAC100_theta <- empSEdfHH %>%
+  filter(rho1==0.05 & r==1.0 & parameters=='theta')
+empSEdf_WPICC10_CAC100_theta <- empSEdfHH %>%
+  filter(rho1==0.1 & r==1.0 & parameters=='theta')
+
+# Generate grid plots
+p1 <- plotminigrid(
+  empSEdf_WPICC5_CAC80_theta,
+  ylims=ylims,
+  title=expression(paste(rho[1], " = 0.05", ", r = 0.8"))
+)
+p2 <- plotminigrid(
+  empSEdf_WPICC10_CAC80_theta,
+  ylims=ylims,
+  title=expression(paste(rho[1], " = 0.1", ", r = 0.8"))
+)
+p3 <- plotminigrid(
+  empSEdf_WPICC5_CAC100_theta,
+  ylims=ylims,
+  title=expression(paste(rho[1], " = 0.05", ", r = 1.0"))
+)
+p4 <- plotminigrid(
+  empSEdf_WPICC10_CAC100_theta,
+  ylims=ylims,
+  title=expression(paste(rho[1], " = 0.1", ", r = 1.0"))
+)
+
+# Combine grid plots
+mylegend <- g_legend(p1)
+title <- expression(paste("Empirical SE of ", hat(theta)))
+p_empSE_theta <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
+ggsave("plots/empSE_theta.jpg", p_empSE_theta, width=9, height=7, units="in", dpi=800)
+
+
+## Plot model-based SE for theta
+
+# Determine common y-axis limits
+maxmodSEHG <- signif(
+  modSEdfHG %>%
+    filter(parameters=='theta') %>%
+    summarise(max(value)),
+  2)
+maxmodSEHH <- signif(
+  modSEdfHH %>%
+    filter(parameters=='theta') %>%
+    summarise(max(value)),
+  2)
+ylims <- c(0, max(maxmodSEHG, maxmodSEHH))
+
+# Get separate results blocks for plotting
+empSEdf_WPICC5_CAC80_theta <- modSEdfHG %>%
+  filter(rho1==0.05 & r==0.8 & parameters=='theta')
+modSEdf_WPICC10_CAC80_theta <- modSEdfHG %>%
+  filter(rho1==0.1 & r==0.8 & parameters=='theta')
+modSEdf_WPICC5_CAC100_theta <- modSEdfHH %>%
+  filter(rho1==0.05 & r==1.0 & parameters=='theta')
+modSEdf_WPICC10_CAC100_theta <- modSEdfHH %>%
+  filter(rho1==0.1 & r==1.0 & parameters=='theta')
+
+# Generate grid plots
+p1 <- plotminigrid(
+  modSEdf_WPICC5_CAC80_theta,
+  ylims=ylims,
+  title=expression(paste(rho[1], " = 0.05", ", r = 0.8"))
+)
+p2 <- plotminigrid(
+  modSEdf_WPICC10_CAC80_theta,
+  ylims=ylims,
+  title=expression(paste(rho[1], " = 0.1", ", r = 0.8"))
+)
+p3 <- plotminigrid(
+  modSEdf_WPICC5_CAC100_theta,
+  ylims=ylims,
+  title=expression(paste(rho[1], " = 0.05", ", r = 1.0"))
+)
+p4 <- plotminigrid(
+  modSEdf_WPICC10_CAC100_theta,
+  ylims=ylims,
+  title=expression(paste(rho[1], " = 0.1", ", r = 1.0"))
+)
+
+# Combine grid plots
+mylegend <- g_legend(p1)
+title <- expression(paste("Model-based SE of ", hat(theta)))
+p_modSE_theta <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
+ggsave("plots/modSE_theta.jpg", p_modSE_theta, width=9, height=7, units="in", dpi=800)
+
+
+## Plot empirical versus model-based SE for theta
+
+# Determine common y-axis limits
+maxmodSEHG <- signif(
+  modSEdfHG %>%
+    filter(parameters=='theta') %>%
+    summarise(max(value)),
+  2)
+maxmodSEHH <- signif(
+  modSEdfHH %>%
+    filter(parameters=='theta') %>%
+    summarise(max(value)),
+  2)
+maxempSEHG <- signif(
+  empSEdfHG %>%
+    filter(parameters=='theta') %>%
+    summarise(max(value)),
+  2)
+maxempSEHH <- signif(
+  empSEdfHH %>%
+    filter(parameters=='theta') %>%
+    summarise(max(value)),
+  2)
+ylims <- c(0, max(maxmodSEHG, maxmodSEHH, maxempSEHG, maxempSEHH))
+
+# Combine empirical and model-based results
+empSEdfHH$method <- as.factor(empSEdfHH$method)
+levels(empSEdfHH$method) <- c('MCMC-empirical', 'REML-empirical')
+empSEdfHG$method <- as.factor(empSEdfHG$method)
+levels(empSEdfHG$method) <- c('MCMC-empirical', 'REML-empirical')
+modSEdfHH$method <- as.factor(modSEdfHH$method)
+levels(modSEdfHH$method) <- c('MCMC-model', 'REML-model')
+modSEdfHG$method <- as.factor(modSEdfHG$method)
+levels(modSEdfHG$method) <- c('MCMC-model', 'REML-model')
+bothSEdfHH <- rbind(empSEdfHH, modSEdfHH)
+bothSEdfHG <- rbind(empSEdfHG, modSEdfHG)
+
+# Get separate results blocks for plotting
+bothSEdf_WPICC5_CAC80_theta <- bothSEdfHG %>%
+  filter(rho1==0.05 & r==0.8 & parameters=='theta')
+bothSEdf_WPICC10_CAC80_theta <- bothSEdfHG %>%
+  filter(rho1==0.1 & r==0.8 & parameters=='theta')
+bothSEdf_WPICC5_CAC100_theta <- bothSEdfHH %>%
+  filter(rho1==0.05 & r==1.0 & parameters=='theta')
+bothSEdf_WPICC10_CAC100_theta <- bothSEdfHH %>%
+  filter(rho1==0.1 & r==1.0 & parameters=='theta')
+
+# Generate grid plots
+p1 <- plotminigrid(
+  bothSEdf_WPICC5_CAC80_theta,
+  ylims=ylims,
+  title=expression(paste(rho[1], " = 0.05", ", r = 0.8"))
+)
+p2 <- plotminigrid(
+  bothSEdf_WPICC10_CAC80_theta,
+  ylims=ylims,
+  title=expression(paste(rho[1], " = 0.1", ", r = 0.8"))
+)
+p3 <- plotminigrid(
+  bothSEdf_WPICC5_CAC100_theta,
+  ylims=ylims,
+  title=expression(paste(rho[1], " = 0.05", ", r = 1.0"))
+)
+p4 <- plotminigrid(
+  bothSEdf_WPICC10_CAC100_theta,
+  ylims=ylims,
+  title=expression(paste(rho[1], " = 0.1", ", r = 1.0"))
+)
+
+# Combine grid plots
+mylegend <- g_legend(p1)
+title <- expression(paste("Empirical versus model-based SE of ", hat(theta)))
+p_bothSE_theta <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
+ggsave("plots/bothSE_theta.jpg", p_bothSE_theta, width=9, height=7, units="in", dpi=800)
