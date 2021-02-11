@@ -130,9 +130,10 @@ p4 <- plotminigrid(
 
 # Combine grid plots
 mylegend <- g_legend(p1)
-title <- expression(paste("Bias of ", hat(theta)))
+title <- expression(paste("Bias for ", hat(theta)))
 p_bias_theta <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
 ggsave("plots/bias_theta.jpg", p_bias_theta, width=9, height=7, units="in", dpi=800)
+ggsave("plots/bias_theta.pdf", p_bias_theta, width=9, height=7, units="in", dpi=600)
 
 
 ## Plot bias for WPICC (rho1)
@@ -194,9 +195,10 @@ p4 <- plotminigrid(
 
 # Combine grid plots
 mylegend <- g_legend(p1)
-title <- expression(paste("Bias of ", hat(rho[1])))
+title <- expression(paste("Bias for ", hat(rho[1])))
 p_bias_WPICC <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
 ggsave("plots/bias_WPICC.jpg", p_bias_WPICC, width=9, height=7, units="in", dpi=800)
+ggsave("plots/bias_WPICC.pdf", p_bias_WPICC, width=9, height=7, units="in", dpi=600)
 
 
 ## Plot bias for BPICC (rho2)
@@ -235,9 +237,10 @@ p2 <- plotminigrid(
 
 # Combine grid plots
 mylegend <- g_legend(p1)
-title <- expression(paste("Bias of ", hat(rho[2])))
+title <- expression(paste("Bias for ", hat(rho[2])))
 p_bias_BPICC <- make_1x2_multiplot(p1, p2, mylegend, title)
-ggsave("plots/bias_BPICC.jpg", p_bias_BPICC, width=9, height=7, units="in", dpi=800)
+ggsave("plots/bias_BPICC.jpg", p_bias_BPICC, width=9, height=4, units="in", dpi=800)
+ggsave("plots/bias_BPICC.pdf", p_bias_BPICC, width=9, height=4, units="in", dpi=600)
 
 
 ## Plot MSE for theta
@@ -289,9 +292,10 @@ p4 <- plotminigrid(
 
 # Combine grid plots
 mylegend <- g_legend(p1)
-title <- expression(paste("MSE of ", hat(theta)))
+title <- expression(paste("MSE for ", hat(theta)))
 p_MSE_theta <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
 ggsave("plots/MSE_theta.jpg", p_MSE_theta, width=9, height=7, units="in", dpi=800)
+ggsave("plots/MSE_theta.pdf", p_MSE_theta, width=9, height=7, units="in", dpi=600)
 
 
 ## Plot MSE for WPICC
@@ -343,9 +347,10 @@ p4 <- plotminigrid(
 
 # Combine grid plots
 mylegend <- g_legend(p1)
-title <- expression(paste("MSE of ", hat(rho[1])))
+title <- expression(paste("MSE for ", hat(rho[1])))
 p_MSE_WPICC <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
 ggsave("plots/MSE_WPICC.jpg", p_MSE_WPICC, width=9, height=7, units="in", dpi=800)
+ggsave("plots/MSE_WPICC.pdf", p_MSE_WPICC, width=9, height=7, units="in", dpi=600)
 
 
 ## Plot MSE for BPICC
@@ -387,9 +392,10 @@ p2 <- plotminigrid(
 
 # Combine grid plots
 mylegend <- g_legend(p1)
-title <- expression(paste("MSE of ", hat(rho[2])))
+title <- expression(paste("MSE for ", hat(rho[2])))
 p_MSE_BPICC <- make_1x2_multiplot(p1, p2, mylegend, title)
-ggsave("plots/MSE_BPICC.jpg", p_MSE_BPICC, width=9, height=7, units="in", dpi=800)
+ggsave("plots/MSE_BPICC.jpg", p_MSE_BPICC, width=9, height=4, units="in", dpi=800)
+ggsave("plots/MSE_BPICC.pdf", p_MSE_BPICC, width=9, height=4, units="in", dpi=600)
 
 
 ## Plot 95% confidence/credible interval coverage for theta
@@ -441,9 +447,10 @@ p4 <- plotminigrid(
 
 # Combine grid plots
 mylegend <- g_legend(p1)
-title <- expression(paste("Confidence/credible interval coverage of ", hat(theta)))
+title <- expression(paste("Confidence/credible interval coverage for ", hat(theta)))
 p_cov_theta <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
 ggsave("plots/cov_theta.jpg", p_cov_theta, width=9, height=7, units="in", dpi=800)
+ggsave("plots/cov_theta.pdf", p_cov_theta, width=9, height=7, units="in", dpi=600)
 
 
 ## Plot empirical SE for theta
@@ -495,9 +502,10 @@ p4 <- plotminigrid(
 
 # Combine grid plots
 mylegend <- g_legend(p1)
-title <- expression(paste("Empirical SE of ", hat(theta)))
+title <- expression(paste("Empirical SE for ", hat(theta)))
 p_empSE_theta <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
 ggsave("plots/empSE_theta.jpg", p_empSE_theta, width=9, height=7, units="in", dpi=800)
+ggsave("plots/empSE_theta.pdf", p_empSE_theta, width=9, height=7, units="in", dpi=600)
 
 
 ## Plot model-based SE for theta
@@ -516,7 +524,7 @@ maxmodSEHH <- signif(
 ylims <- c(0, max(maxmodSEHG, maxmodSEHH))
 
 # Get separate results blocks for plotting
-empSEdf_WPICC5_CAC80_theta <- modSEdfHG %>%
+modSEdf_WPICC5_CAC80_theta <- modSEdfHG %>%
   filter(rho1==0.05 & r==0.8 & parameters=='theta')
 modSEdf_WPICC10_CAC80_theta <- modSEdfHG %>%
   filter(rho1==0.1 & r==0.8 & parameters=='theta')
@@ -549,9 +557,10 @@ p4 <- plotminigrid(
 
 # Combine grid plots
 mylegend <- g_legend(p1)
-title <- expression(paste("Model-based SE of ", hat(theta)))
+title <- expression(paste("Model-based SE for ", hat(theta)))
 p_modSE_theta <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
 ggsave("plots/modSE_theta.jpg", p_modSE_theta, width=9, height=7, units="in", dpi=800)
+ggsave("plots/modSE_theta.pdf", p_modSE_theta, width=9, height=7, units="in", dpi=600)
 
 
 ## Plot empirical versus model-based SE for theta
@@ -625,6 +634,7 @@ p4 <- plotminigrid(
 
 # Combine grid plots
 mylegend <- g_legend(p1)
-title <- expression(paste("Empirical versus model-based SE of ", hat(theta)))
+title <- expression(paste("Empirical and model-based SE for ", hat(theta)))
 p_bothSE_theta <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
 ggsave("plots/bothSE_theta.jpg", p_bothSE_theta, width=9, height=7, units="in", dpi=800)
+ggsave("plots/bothSE_theta.pdf", p_bothSE_theta, width=9, height=7, units="in", dpi=600)
