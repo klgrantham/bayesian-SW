@@ -161,44 +161,8 @@ MSEdfHG <- allMSErowsHG %>%
   rename(c(value = MSE, MCSE = MCSE_MSE))
 
 # TODO: duplicate remaining measures for HH and HG
-covdf <- allcovrows %>%
-  pivot_longer(
-    cols=all_of(pars),
-    names_to='parameters',
-    values_to='value'
-  )
-
-empSEdf <- allempSErows %>%
-  pivot_longer(
-    cols=all_of(pars),
-    names_to='parameters',
-    values_to='value'
-  )
-
-modSEdf <- allmodSErows %>%
-  pivot_longer(
-    cols=all_of(pars),
-    names_to='parameters',
-    values_to='value'
-  )
-
-# Create formatted results table
-
-# Create dummy results dataframe (for now)
-dat <- expand.grid(
-  S = c(1,2,5),
-  Tp = c(5, 9),
-  m = c(10, 100),
-  rho1 = c(0.05, 0.1),
-  r = 0.8,
-  method = c('MCMC', 'REML'),
-  measure = c('bias', 'MCSE_bias')
-)
-dat$theta <- rnorm(dim(dat)[1])
-dat$WPICC <- rnorm(dim(dat)[1])
-dat$BPICC <- rnorm(dim(dat)[1])
-
-biasdf <- dat %>%
+pars <- c('theta')
+covdfHH <- allcovrowsHH %>%
   pivot_longer(
     cols=all_of(pars),
     names_to='parameters',
@@ -208,8 +172,74 @@ biasdf <- dat %>%
     names_from='measure',
     values_from='value'
   ) %>%
-  rename(c(value = bias, MCSE = MCSE_bias))
+  rename(c(value = coverage, MCSE = MCSE_coverage))
 
+pars <- c('theta')
+covdfHG <- allcovrowsHG %>%
+  pivot_longer(
+    cols=all_of(pars),
+    names_to='parameters',
+    values_to='value'
+  ) %>%
+  pivot_wider(
+    names_from='measure',
+    values_from='value'
+  ) %>%
+  rename(c(value = coverage, MCSE = MCSE_coverage))
+
+pars <- c('theta', 'WPICC')
+empSEdfHH <- allempSErowsHH %>%
+  pivot_longer(
+    cols=all_of(pars),
+    names_to='parameters',
+    values_to='value'
+  ) %>%
+  pivot_wider(
+    names_from='measure',
+    values_from='value'
+  ) %>%
+  rename(c(value = empSE, MCSE = MCSE_empSE))
+
+pars <- c('theta', 'WPICC', 'BPICC')
+empSEdfHG <- allempSErowsHG %>%
+  pivot_longer(
+    cols=all_of(pars),
+    names_to='parameters',
+    values_to='value'
+  ) %>%
+  pivot_wider(
+    names_from='measure',
+    values_from='value'
+  ) %>%
+  rename(c(value = empSE, MCSE = MCSE_empSE))
+
+pars <- c('theta', 'WPICC')
+modSEdfHH <- allmodSErowsHH %>%
+  pivot_longer(
+    cols=all_of(pars),
+    names_to='parameters',
+    values_to='value'
+  ) %>%
+  pivot_wider(
+    names_from='measure',
+    values_from='value'
+  ) %>%
+  rename(c(value = avgmodSE, MCSE = MCSE_avgmodSE))
+
+pars <- c('theta', 'WPICC', 'BPICC')
+modSEdfHG <- allmodSErowsHG %>%
+  pivot_longer(
+    cols=all_of(pars),
+    names_to='parameters',
+    values_to='value'
+  ) %>%
+  pivot_wider(
+    names_from='measure',
+    values_from='value'
+  ) %>%
+  rename(c(value = avgmodSE, MCSE = MCSE_avgmodSE))
+
+# Create formatted results table
 # Create Latex code for generating table
 fmtmain <- function(x, digits){
   s <- format(x, digits=digits)
@@ -243,4 +273,4 @@ create_Latex_table <- function(df, maindigits=1, MCSEdigits=1, pars, parnames) {
 create_Latex_table(biasdfHH, pars=c('theta', 'WPICC'), parnames=c("$\\theta$", "$\\rho_1$"))
 create_Latex_table(biasdfHG, pars=c('theta', 'WPICC', 'BPICC'), parnames=c("$\\theta$", "$\\rho_1$", "$\\rho_2$"))
 
-create_Latex_table(MSEdf, maindigits=2, MCSEdigits=2)
+#create_Latex_table(MSEdf, maindigits=2, MCSEdigits=2)
