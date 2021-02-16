@@ -29,6 +29,7 @@ calculate_measures <- function(clust_per_seq, periods, subjects, WPICC, CAC, the
   )
   load(file=infile)
   # Contains: est$REML_ests, est$REML_stderrs, est$stderrKRs,
+  #           est$REML_CI_lowers, est$REML_CI_uppers,
   #           est$REML_CI_KR_lowers, est$REML_CI_KR_uppers,
   #           est$MCMC_means, est$MCMC_medians, est$MCMC_sds,
   #           est$MCMC_025, est$MCMC_975, est$MCMC_powvals,
@@ -92,6 +93,15 @@ calculate_measures <- function(clust_per_seq, periods, subjects, WPICC, CAC, the
   REML_MCSE_avgKRmodSE <- MCSE_avgmodSE(est$REML_stderrKRs, REML_avgKRmodSE,
                                         'MCSE_avgmodSE', 'REML')
 
+  # Calculate relative % error in model standard error
+  MCMC_pcterr_modSE <- pcterr_modSE(MCMC_avgmodSE, MCMC_mean_empSE, 'pcterrmodSE', 'MCMC')
+  REML_pcterr_modSE <- pcterr_modSE(REML_avgKRmodSE, REML_empSE, 'pcterrmodSE', 'REML')
+  # Calculate MCSE of relative % error in model SE
+  MCMC_MCSE_pcterr_modSE <- MCSE_pcterr_modSE(est$MCMC_sds, MCMC_avgmodSE, MCMC_mean_empSE,
+                                              'MCSE_pcterrmodSE', 'MCMC')
+  REML_MCSE_pcterr_modSE <- MCSE_pcterr_modSE(est$REML_stderrKRs, REML_avgKRmodSE, REML_empSE,
+                                              'MCSE_pcterrmodSE', 'REML')
+  
   # Calculate 'power'
   MCMC_pow <- colMeans(est$MCMC_powvals)
   MCMC_pow_df <- as.data.frame(t(MCMC_pow))
@@ -126,6 +136,10 @@ calculate_measures <- function(clust_per_seq, periods, subjects, WPICC, CAC, the
     REML_avgKRmodSE,
     MCMC_MCSE_avgmodSE,
     REML_MCSE_avgKRmodSE,
+    MCMC_pcterr_modSE,
+    REML_pcterr_modSE,
+    MCMC_MCSE_pcterr_modSE,
+    REML_MCSE_pcterr_modSE,
     MCMC_pow_df
   )
   
@@ -546,4 +560,29 @@ MCSE_avgmodSE <- function(sim_estimates, avgmodSE_ests, measure_name, method_nam
   MCSE_avgmodSE_df$measure <- measure_name
   MCSE_avgmodSE_df$method <- method_name
   return(MCSE_avgmodSE_df)
+}
+
+pcterr_modSE <- function(avgmodSE_ests, empSE_ests, measure_name, method_name) {
+  pcterr <- 100 * ((avgmodSE_ests/empSE_ests) - 1) # as.matrix()?
+  pcterrdf <- as.data.frame(pcterr) # TODO: Check whether transpose needed
+  pcterr_df$measure <- measure_name
+  pcterr_df$method <- method_name
+  return(pcterr_df)
+}
+
+MCSE_pcterr_modSE <- function(sim_estimates, avgmodSE_ests, empSE_ests, measure_name, method_name) {
+  nsim <- dim(sim_estimates)[1]
+  avgmodSE_ests <- select(avgmodSE_ests, -c('measure', 'method'))
+  empSE_ests <- select(empSE_ests, -c('measure', 'method'))
+  
+  quad_avgmodSE_ests <- as.matrix(avgmodSE_ests)^4
+  sq_ests <- as.matrix(sim_estimates)^2
+  varvar <- apply(sq_ests, 2, var)
+  MCSE_pcterr_modSE_a <- 100 * (avgmodSE_ests/empSE_ests)
+  MCSE_pcterr_modSE_b <- sqrt((varvar/(4*nsim*(quad_avgmodSE_ests))) + (1/(2*(nsim-1))))
+  MCSE_pcterr_modSE <- MCSE_pcterr_modSE_a * MCSE_pcterr_modSE_b
+  MCSE_pcterr_modSE_df <- as.data.frame(MCSE_pcterr_modSE)
+  MCSE_pcterr_modSE_df$measure <- measure_name
+  MCSE_pcterr_modSE_df$method <- method_name
+  return(MCSE_pcterr_modSE_df)
 }
