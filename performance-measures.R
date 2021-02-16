@@ -63,13 +63,17 @@ calculate_measures <- function(clust_per_seq, periods, subjects, WPICC, CAC, the
   MCMC_coverage <- coverage(est$MCMC_025, est$MCMC_975,
                             true_params_MCMCrep, 'coverage', 'MCMC')
   true_params_REMLrep <- est$true_params[rep(1, REMLreps),]
+  REML_coverage <- coverage(est$REML_CI_lowers, est$REML_CI_uppers,
+                            true_params_REMLrep, 'coverage', 'REML')
   REML_KR_coverage <- coverage(est$REML_CI_KR_lowers, est$REML_CI_KR_uppers,
-                               true_params_REMLrep, 'coverage', 'REML')
+                               true_params_REMLrep, 'coverageKR', 'REML')
   # Calculate MCSE of coverage estimates
   MCMC_MCSE_coverage <- MCSE_coverage(MCMCreps, MCMC_coverage,
                                       'MCSE_coverage', 'MCMC')
-  REML_KR_MCSE_coverage <- MCSE_coverage(REMLreps, REML_KR_coverage,
+  REML_MCSE_coverage <- MCSE_coverage(REMLreps, REML_coverage,
                                          'MCSE_coverage', 'REML')
+  REML_KR_MCSE_coverage <- MCSE_coverage(REMLreps, REML_KR_coverage,
+                                         'MCSE_coverageKR', 'REML')
   
   # Calculate empirical standard error
   MCMC_mean_empSE <- empSE(est$MCMC_means, 'empSE', 'MCMC')
@@ -109,8 +113,10 @@ calculate_measures <- function(clust_per_seq, periods, subjects, WPICC, CAC, the
     MCMC_mean_MCSE_MSE,
     REML_MCSE_MSE,
     MCMC_coverage,
+    REML_coverage,
     REML_KR_coverage,
     MCMC_MCSE_coverage,
+    REML_MCSE_coverage,
     REML_KR_MCSE_coverage,
     MCMC_mean_empSE,
     REML_empSE,
@@ -167,6 +173,8 @@ collate_results <- function(Nrep, clust_per_seq, periods, subjects, WPICC, CAC, 
   MCMC_powvals <- data.frame()
   REML_ests <- data.frame()
   REML_stderrs <- data.frame()
+  REML_CI_lowers <- data.frame()
+  REML_CI_uppers <- data.frame()
   REML_stderrKRs <- data.frame()
   REML_CI_KR_lowers <- data.frame()
   REML_CI_KR_uppers <- data.frame()
@@ -205,6 +213,8 @@ collate_results <- function(Nrep, clust_per_seq, periods, subjects, WPICC, CAC, 
     # Include nth REML results in results containers
     REML_ests <- rbind(REML_ests, REML$est)
     REML_stderrs <- rbind(REML_stderrs, REML$stderr)
+    REML_CI_lowers <- rbind(REML_CI_lowers, REML$CI_lower)
+    REML_CI_uppers <- rbind(REML_CI_uppers, REML$CI_upper)
     REML_stderrKRs <- rbind(REML_stderrKRs, REML$stderrKR)
     REML_CI_KR_lowers <- rbind(REML_CI_KR_lowers, REML$CI_KR_lower)
     REML_CI_KR_uppers <- rbind(REML_CI_KR_uppers, REML$CI_KR_upper)
@@ -225,6 +235,8 @@ collate_results <- function(Nrep, clust_per_seq, periods, subjects, WPICC, CAC, 
   rnames_REML <- rownames(REML)
   colnames(REML_ests) <- rnames_REML
   colnames(REML_stderrs) <- rnames_REML
+  colnames(REML_CI_lowers) <- rnames_REML
+  colnames(REML_CI_uppers) <- rnames_REML
   colnames(REML_stderrKRs) <- rnames_REML
   colnames(REML_CI_KR_lowers) <- rnames_REML
   colnames(REML_CI_KR_uppers) <- rnames_REML
@@ -241,6 +253,8 @@ collate_results <- function(Nrep, clust_per_seq, periods, subjects, WPICC, CAC, 
   est <- list(
     REML_ests = REML_ests,
     REML_stderrs = REML_stderrs,
+    REML_CI_lowers = REML_CI_lowers,
+    REML_CI_uppers = REML_CI_uppers,
     REML_stderrKRs = REML_stderrKRs,
     REML_CI_KR_lowers = REML_CI_KR_lowers,
     REML_CI_KR_uppers = REML_CI_KR_uppers,
@@ -312,13 +326,21 @@ reduce_nth_results <- function(n, clust_per_seq, periods, subjects, WPICC, CAC, 
   tstat <- qt(alpha, adj_ddf)
   
   # Construct 95% KR confidence intervals
-  est <- coef(sumreml)['treat','Estimate']
-  theta_CI_KR_low <- est - tstat * adj_SE
-  theta_CI_KR_high <- est + tstat * adj_SE
+  theta_CI_KR_low <- REML_theta_est - tstat * adj_SE
+  theta_CI_KR_high <- REML_theta_est + tstat * adj_SE
   
   # Get KR-adjusted standard error for theta
   theta_SE_KR <- adj_SE
 
+  # Get unadjusted 95% confidence interval for theta
+  
+  # Get standard normal test statistic
+  zstat <- qnorm(alpha, 0, 1)
+  
+  # Construct 95% KR confidence intervals
+  theta_CI_low <- REML_theta_est - zstat * REML_theta_stderr
+  theta_CI_high <- REML_theta_est + zstat * REML_theta_stderr
+  
   # Combine post-warmup posterior draws across chains
   if (CAC==1.0) {
     varcomps <- as.data.frame(sumreml$varcor)
@@ -342,13 +364,10 @@ reduce_nth_results <- function(n, clust_per_seq, periods, subjects, WPICC, CAC, 
     sum_c_cp <- (REML_sig_sq_c + REML_sig_sq_cp)
     REML_WPICC <- sum_c_cp / (sum_c_cp + REML_sig_sq_e)
     REML_CAC <- REML_sig_sq_c / sum_c_cp
-    if (is.na(REML_CAC)) { # TODO: Decide how best to handle this
-      REML_CAC <- 0
-    }
     REML_BPICC <- REML_WPICC * REML_CAC
     
-    est=c(REML_theta_est, REML_WPICC, REML_CAC, REML_sig_sq_e,
-          REML_sig_sq_c, REML_sig_sq_cp, REML_BPICC)
+    est=c(REML_theta_est, REML_WPICC, REML_CAC, REML_BPICC, REML_sig_sq_e,
+          REML_sig_sq_c, REML_sig_sq_cp)
     
     # Flag if cluster variance estimated as 0
     if (REML_sig_sq_c==0 | REML_sig_sq_cp==0) {
@@ -363,6 +382,8 @@ reduce_nth_results <- function(n, clust_per_seq, periods, subjects, WPICC, CAC, 
   REML_res <- data.frame(
     est=est,
     stderr=c(REML_theta_stderr, rep(NA, length(pars)-1)),
+    CI_lower=c(theta_CI_low, rep(NA, length(pars)-1)),
+    CI_upper=c(theta_CI_high, rep(NA, length(pars)-1)),
     stderrKR=c(theta_SE_KR, rep(NA, length(pars)-1)),
     CI_KR_lower=c(theta_CI_KR_low, rep(NA, length(pars)-1)),
     CI_KR_upper=c(theta_CI_KR_high, rep(NA, length(pars)-1)),
