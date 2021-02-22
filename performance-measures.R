@@ -67,14 +67,14 @@ calculate_measures <- function(clust_per_seq, periods, subjects, WPICC, CAC, the
   REML_coverage <- coverage(est$REML_CI_lowers, est$REML_CI_uppers,
                             true_params_REMLrep, 'coverage', 'REML')
   REML_KR_coverage <- coverage(est$REML_CI_KR_lowers, est$REML_CI_KR_uppers,
-                               true_params_REMLrep, 'coverageKR', 'REML')
+                               true_params_REMLrep, 'coverage', 'REML (KR)')
   # Calculate MCSE of coverage estimates
   MCMC_MCSE_coverage <- MCSE_coverage(MCMCreps, MCMC_coverage,
                                       'MCSE_coverage', 'MCMC')
   REML_MCSE_coverage <- MCSE_coverage(REMLreps, REML_coverage,
                                          'MCSE_coverage', 'REML')
   REML_KR_MCSE_coverage <- MCSE_coverage(REMLreps, REML_KR_coverage,
-                                         'MCSE_coverageKR', 'REML')
+                                         'MCSE_coverage', 'REML (KR)')
   
   # Calculate empirical standard error
   MCMC_mean_empSE <- empSE(est$MCMC_means, 'empSE', 'MCMC')
@@ -86,21 +86,27 @@ calculate_measures <- function(clust_per_seq, periods, subjects, WPICC, CAC, the
   # Calculate average model standard error
   # Root-mean of squared model SEs
   MCMC_avgmodSE <- avgmodSE(est$MCMC_sds, 'avgmodSE', 'MCMC')
-  REML_avgKRmodSE <- avgmodSE(est$REML_stderrKRs, 'avgmodSE', 'REML')
+  REML_avgmodSE <- avgmodSE(est$REML_stderrs, 'avgmodSE', 'REML')
+  REML_avgKRmodSE <- avgmodSE(est$REML_stderrKRs, 'avgmodSE', 'REML (KR)')
   # Calculate MCSE of average model SE
   MCMC_MCSE_avgmodSE <- MCSE_avgmodSE(est$MCMC_sds, MCMC_avgmodSE,
                                       'MCSE_avgmodSE', 'MCMC')
+  REML_MCSE_avgmodSE <- MCSE_avgmodSE(est$REML_stderrs, REML_avgmodSE,
+                                      'MCSE_avgmodSE', 'REML')
   REML_MCSE_avgKRmodSE <- MCSE_avgmodSE(est$REML_stderrKRs, REML_avgKRmodSE,
-                                        'MCSE_avgmodSE', 'REML')
+                                        'MCSE_avgmodSE', 'REML (KR)')
 
   # Calculate relative % error in model standard error
   MCMC_pcterr_modSE <- pcterr_modSE(MCMC_avgmodSE, MCMC_mean_empSE, 'pcterrmodSE', 'MCMC')
-  REML_pcterr_modSE <- pcterr_modSE(REML_avgKRmodSE, REML_empSE, 'pcterrmodSE', 'REML')
+  REML_pcterr_modSE <- pcterr_modSE(REML_avgmodSE, REML_empSE, 'pcterrmodSE', 'REML')
+  REML_KR_pcterr_modSE <- pcterr_modSE(REML_avgKRmodSE, REML_empSE, 'pcterrmodSE', 'REML (KR)')
   # Calculate MCSE of relative % error in model SE
   MCMC_MCSE_pcterr_modSE <- MCSE_pcterr_modSE(est$MCMC_sds, MCMC_avgmodSE, MCMC_mean_empSE,
                                               'MCSE_pcterrmodSE', 'MCMC')
-  REML_MCSE_pcterr_modSE <- MCSE_pcterr_modSE(est$REML_stderrKRs, REML_avgKRmodSE, REML_empSE,
+  REML_MCSE_pcterr_modSE <- MCSE_pcterr_modSE(est$REML_sterrs, REML_avgmodSE, REML_empSE,
                                               'MCSE_pcterrmodSE', 'REML')
+  REML_KR_MCSE_pcterr_modSE <- MCSE_pcterr_modSE(est$REML_stderrKRs, REML_avgKRmodSE, REML_empSE,
+                                                 'MCSE_pcterrmodSE', 'REML (KR)')
   
   # Calculate 'power'
   MCMC_pow <- colMeans(est$MCMC_powvals)
@@ -133,16 +139,20 @@ calculate_measures <- function(clust_per_seq, periods, subjects, WPICC, CAC, the
     MCMC_mean_MCSE_empSE,
     REML_MCSE_empSE,
     MCMC_avgmodSE,
+    REML_avgmodSE,
     REML_avgKRmodSE,
     MCMC_MCSE_avgmodSE,
+    REML_MCSE_avgmodSE,
     REML_MCSE_avgKRmodSE,
     MCMC_pcterr_modSE,
     REML_pcterr_modSE,
+    REML_KR_pcterr_modSE,
     MCMC_MCSE_pcterr_modSE,
     REML_MCSE_pcterr_modSE,
+    REML_KR_MCSE_pcterr_modSE,
     MCMC_pow_df
   )
-  
+
   reps <- data.frame(
     MCMCreps=MCMCreps,
     REMLreps=REMLreps
@@ -204,7 +214,7 @@ collate_results <- function(Nrep, clust_per_seq, periods, subjects, WPICC, CAC, 
     '_theta', theta
   )
   
-  nonzerovar <- 0
+  zerovarreps <- 0
   for (n in 1:Nrep) {
     
     infile=paste0(
@@ -220,46 +230,65 @@ collate_results <- function(Nrep, clust_per_seq, periods, subjects, WPICC, CAC, 
     REML <- res$REML_res
     MCMC <- res$MCMC_res
     
-    # Count REML results with all nonzero variance components
-    if (isFALSE(res$zerovar)) {
-      nonzerovar <- nonzerovar + 1
+    # Count REML replicates with at least one variance estimate of 0
+    if (isTRUE(res$zerovar)) {
+      zerovarreps <- zerovarreps + 1
     }
-    # Include nth REML results in results containers
-    REML_ests <- rbind(REML_ests, REML$est)
-    REML_stderrs <- rbind(REML_stderrs, REML$stderr)
-    REML_CI_lowers <- rbind(REML_CI_lowers, REML$CI_lower)
-    REML_CI_uppers <- rbind(REML_CI_uppers, REML$CI_upper)
-    REML_stderrKRs <- rbind(REML_stderrKRs, REML$stderrKR)
-    REML_CI_KR_lowers <- rbind(REML_CI_KR_lowers, REML$CI_KR_lower)
-    REML_CI_KR_uppers <- rbind(REML_CI_KR_uppers, REML$CI_KR_upper)
+    
+    # Skip nth REML results if CAC estimate is NaN (both cluster and cluster-period
+    # variances estimated as 0)
+    if (CAC != 1.0) {
+      if (is.na(REML$est[REML$parameter=='CAC'])) {
+        print(paste("Skipping REML results for replicate ", n))
+      } else {
+        # Include nth REML results in results containers
+        REML_ests <- rbind(REML_ests, REML$est)
+        REML_stderrs <- rbind(REML_stderrs, REML$stderr)
+        REML_CI_lowers <- rbind(REML_CI_lowers, REML$CI_lower)
+        REML_CI_uppers <- rbind(REML_CI_uppers, REML$CI_upper)
+        REML_stderrKRs <- rbind(REML_stderrKRs, REML$stderrKR)
+        REML_CI_KR_lowers <- rbind(REML_CI_KR_lowers, REML$CI_KR_lower)
+        REML_CI_KR_uppers <- rbind(REML_CI_KR_uppers, REML$CI_KR_upper)
+      }
+    } else {
+      # Include nth REML results in results containers
+      REML_ests <- rbind(REML_ests, REML$est)
+      REML_stderrs <- rbind(REML_stderrs, REML$stderr)
+      REML_CI_lowers <- rbind(REML_CI_lowers, REML$CI_lower)
+      REML_CI_uppers <- rbind(REML_CI_uppers, REML$CI_upper)
+      REML_stderrKRs <- rbind(REML_stderrKRs, REML$stderrKR)
+      REML_CI_KR_lowers <- rbind(REML_CI_KR_lowers, REML$CI_KR_lower)
+      REML_CI_KR_uppers <- rbind(REML_CI_KR_uppers, REML$CI_KR_upper)
+    }
     
     # Skip nth MCMC results if any divergent transitions
     if (res$div > 0) {
-      next
+      print(paste("Skipping MCMC results for replicate", n))
+    } else {
+      # Include nth MCMC results in results containers 
+      MCMC_means <- rbind(MCMC_means, MCMC$post_mean)
+      MCMC_medians <- rbind(MCMC_medians, MCMC$post_median)
+      MCMC_sds <- rbind(MCMC_sds, MCMC$post_sd)
+      MCMC_025 <- rbind(MCMC_025, MCMC$post_025)
+      MCMC_975 <- rbind(MCMC_975, MCMC$post_975)
+      MCMC_powvals <- rbind(MCMC_powvals, MCMC$theta_greaterthanC)
     }
-    # Include nth MCMC results in results containers 
-    MCMC_means <- rbind(MCMC_means, MCMC$post_mean)
-    MCMC_medians <- rbind(MCMC_medians, MCMC$post_median)
-    MCMC_sds <- rbind(MCMC_sds, MCMC$post_sd)
-    MCMC_025 <- rbind(MCMC_025, MCMC$post_025)
-    MCMC_975 <- rbind(MCMC_975, MCMC$post_975)
-    MCMC_powvals <- rbind(MCMC_powvals, MCMC$theta_greaterthanC)
   }
-  rnames_MCMC <- rownames(MCMC)
-  rnames_REML <- rownames(REML)
-  colnames(REML_ests) <- rnames_REML
-  colnames(REML_stderrs) <- rnames_REML
-  colnames(REML_CI_lowers) <- rnames_REML
-  colnames(REML_CI_uppers) <- rnames_REML
-  colnames(REML_stderrKRs) <- rnames_REML
-  colnames(REML_CI_KR_lowers) <- rnames_REML
-  colnames(REML_CI_KR_uppers) <- rnames_REML
-  colnames(MCMC_means) <- rnames_MCMC
-  colnames(MCMC_medians) <- rnames_MCMC
-  colnames(MCMC_sds) <- rnames_MCMC
-  colnames(MCMC_025) <- rnames_MCMC
-  colnames(MCMC_975) <- rnames_MCMC
-  colnames(MCMC_powvals) <- rnames_MCMC
+  parnames_MCMC <- MCMC$parameter
+  parnames_REML <- REML$parameter
+  colnames(REML_ests) <- parnames_REML
+  colnames(REML_stderrs) <- parnames_REML
+  colnames(REML_CI_lowers) <- parnames_REML
+  colnames(REML_CI_uppers) <- parnames_REML
+  colnames(REML_stderrKRs) <- parnames_REML
+  colnames(REML_CI_KR_lowers) <- parnames_REML
+  colnames(REML_CI_KR_uppers) <- parnames_REML
+  colnames(MCMC_means) <- parnames_MCMC
+  colnames(MCMC_medians) <- parnames_MCMC
+  colnames(MCMC_sds) <- parnames_MCMC
+  colnames(MCMC_025) <- parnames_MCMC
+  colnames(MCMC_975) <- parnames_MCMC
+  colnames(MCMC_powvals) <- parnames_MCMC
   
   true_params <- res$truevals
   
@@ -279,7 +308,7 @@ collate_results <- function(Nrep, clust_per_seq, periods, subjects, WPICC, CAC, 
     MCMC_975 = MCMC_975,
     MCMC_powvals = MCMC_powvals,
     true_params = true_params,
-    nonzerovar = nonzerovar
+    zerovarreps = zerovarreps
   )
   
   save(
@@ -383,7 +412,7 @@ reduce_nth_results <- function(n, clust_per_seq, periods, subjects, WPICC, CAC, 
     est=c(REML_theta_est, REML_WPICC, REML_CAC, REML_BPICC, REML_sig_sq_e,
           REML_sig_sq_c, REML_sig_sq_cp)
     
-    # Flag if cluster variance estimated as 0
+    # Flag if cluster or cluster-period variance estimated as 0
     if (REML_sig_sq_c==0 | REML_sig_sq_cp==0) {
       zerovar <- TRUE
     } else {
@@ -401,7 +430,7 @@ reduce_nth_results <- function(n, clust_per_seq, periods, subjects, WPICC, CAC, 
     stderrKR=c(theta_SE_KR, rep(NA, length(pars)-1)),
     CI_KR_lower=c(theta_CI_KR_low, rep(NA, length(pars)-1)),
     CI_KR_upper=c(theta_CI_KR_high, rep(NA, length(pars)-1)),
-    row.names=pars
+    parameter=pars
   )
 
   # Posterior means
@@ -428,7 +457,8 @@ reduce_nth_results <- function(n, clust_per_seq, periods, subjects, WPICC, CAC, 
     post_sd=MCMC_sds,
     post_025=MCMC_credints['2.5%',],
     post_975=MCMC_credints['97.5%',],
-    theta_greaterthanC=c(MCMC_greaterthanC, rep(NA, length(pars)-1))
+    theta_greaterthanC=c(MCMC_greaterthanC, rep(NA, length(pars)-1)),
+    parameter=pars
   )
   
   # Retrieve true parameter values
@@ -563,8 +593,11 @@ MCSE_avgmodSE <- function(sim_estimates, avgmodSE_ests, measure_name, method_nam
 }
 
 pcterr_modSE <- function(avgmodSE_ests, empSE_ests, measure_name, method_name) {
+  avgmodSE_ests <- select(avgmodSE_ests, -c('measure', 'method'))
+  empSE_ests <- select(empSE_ests, -c('measure', 'method'))
+  
   pcterr <- 100 * ((avgmodSE_ests/empSE_ests) - 1) # as.matrix()?
-  pcterrdf <- as.data.frame(pcterr) # TODO: Check whether transpose needed
+  pcterr_df <- as.data.frame(pcterr) # TODO: Check whether transpose needed
   pcterr_df$measure <- measure_name
   pcterr_df$method <- method_name
   return(pcterr_df)
