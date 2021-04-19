@@ -28,7 +28,7 @@ calculate_measures <- function(clust_per_seq, periods, subjects, WPICC, CAC, the
     '.Rda'
   )
   load(file=infile)
-  # Contains: est$REML_ests, est$REML_stderrs, est$stderrKRs,
+  # Contains: est$REML_ests, est$REML_stderrs, est$REML_stderrKRs,
   #           est$REML_CI_lowers, est$REML_CI_uppers,
   #           est$REML_CI_KR_lowers, est$REML_CI_KR_uppers,
   #           est$MCMC_means, est$MCMC_medians, est$MCMC_sds,
@@ -103,10 +103,25 @@ calculate_measures <- function(clust_per_seq, periods, subjects, WPICC, CAC, the
   # Calculate MCSE of relative % error in model SE
   MCMC_MCSE_pcterr_modSE <- MCSE_pcterr_modSE(est$MCMC_sds, MCMC_avgmodSE, MCMC_mean_empSE,
                                               'MCSE_pcterrmodSE', 'MCMC')
-  REML_MCSE_pcterr_modSE <- MCSE_pcterr_modSE(est$REML_sterrs, REML_avgmodSE, REML_empSE,
+  REML_MCSE_pcterr_modSE <- MCSE_pcterr_modSE(est$REML_stderrs, REML_avgmodSE, REML_empSE,
                                               'MCSE_pcterrmodSE', 'REML')
   REML_KR_MCSE_pcterr_modSE <- MCSE_pcterr_modSE(est$REML_stderrKRs, REML_avgKRmodSE, REML_empSE,
                                                  'MCSE_pcterrmodSE', 'REML (KR)')
+  
+  # Calculate average interval length
+  MCMC_avgintlen <- avgintlength(est$MCMC_025, est$MCMC_975,
+                                 'avgintlength', 'MCMC')
+  REML_avgintlen <- avgintlength(est$REML_CI_lowers, est$REML_CI_uppers,
+                                 'avgintlength', 'REML')
+  REML_KR_avgintlen <- avgintlength(est$REML_CI_KR_lowers, est$REML_CI_KR_uppers,
+                                    'avgintlength', 'REML (KR)')
+  # MCSE of average interval length (placeholders, not calculated)
+  MCMC_MCSE_avgintlen <- MCSE_avgintlength(MCMC_avgintlen,
+                                           'MCSE_avgintlength', 'MCMC')
+  REML_MCSE_avgintlen <- MCSE_avgintlength(REML_avgintlen,
+                                           'MCSE_avgintlength', 'REML')
+  REML_KR_MCSE_avgintlen <- MCSE_avgintlength(REML_KR_avgintlen,
+                                              'MCSE_avgintlength', 'REML (KR)')
   
   # Calculate 'power'
   MCMC_pow <- colMeans(est$MCMC_powvals)
@@ -150,6 +165,12 @@ calculate_measures <- function(clust_per_seq, periods, subjects, WPICC, CAC, the
     MCMC_MCSE_pcterr_modSE,
     REML_MCSE_pcterr_modSE,
     REML_KR_MCSE_pcterr_modSE,
+    MCMC_avgintlen,
+    REML_avgintlen,
+    REML_KR_avgintlen,
+    MCMC_MCSE_avgintlen,
+    REML_MCSE_avgintlen,
+    REML_KR_MCSE_avgintlen,
     MCMC_pow_df
   )
 
@@ -547,6 +568,26 @@ MCSE_coverage <- function(nsim, cov_ests, measure_name, method_name) {
   MCSE_cov_df$measure <- measure_name
   MCSE_cov_df$method <- method_name
   return(MCSE_cov_df)
+}
+
+# Average interval length
+avgintlength <- function(sim_lower, sim_upper, measure_name, method_name) {
+  intlens <- sim_upper - sim_lower
+  avgintlen <- colMeans(intlens)
+  avgintlen_df <- as.data.frame(t(avgintlen))
+  avgintlen_df$measure <- measure_name
+  avgintlen_df$method <- method_name
+  return(avgintlen_df)
+}
+
+# MCSE of average interval length (placeholder, not calculated)
+MCSE_avgintlength <- function(intlen_ests, measure_name, method_name) {
+  intlen_ests <- select(intlen_ests, -c('measure', 'method'))
+  intlen_ests[1:length(intlen_ests)] <- NA
+  MCSE_intlen_df <- as.data.frame(intlen_ests)
+  MCSE_intlen_df$measure <- measure_name
+  MCSE_intlen_df$method <- method_name
+  return(MCSE_intlen_df)
 }
 
 # Empirical standard error
