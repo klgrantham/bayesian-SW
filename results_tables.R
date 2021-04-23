@@ -43,49 +43,56 @@ for (i in 1:length(file.names)) {
     # Bias values
     biasvals <- measures %>%
       filter(measure %in% c('bias', 'MCSE_bias')) %>%
-      select(c(all_of(pars), measure, method))
+      mutate(Method=recode_factor(method, MCMC="Bayesian", REML="REML")) %>%
+      select(c(all_of(pars), measure, Method))
     biasrows <- cbind(params, biasvals)
     allbiasrowsHH <- rbind(allbiasrowsHH, biasrows)
     
     # MSE values
     MSEvals <- measures %>%
       filter(measure %in% c('MSE', 'MCSE_MSE')) %>%
-      select(c(all_of(pars), measure, method))
+      mutate(Method=recode_factor(method, MCMC="Bayesian", REML="REML")) %>%
+      select(c(all_of(pars), measure, Method))
     MSErows <- cbind(params, MSEvals)
     allMSErowsHH <- rbind(allMSErowsHH, MSErows)
     
     # Coverage values
     covvals <- measures %>%
       filter(measure %in% c('coverage', 'MCSE_coverage')) %>%
-      select(c(theta, measure, method))
+      mutate(Method=recode_factor(method, MCMC="Bayesian", REML="REML")) %>%
+      select(c(theta, measure, Method))
     covrows <- cbind(params, covvals)
     allcovrowsHH <- rbind(allcovrowsHH, covrows)
     
     # Empirical SE
     empSEvals <- measures %>%
       filter(measure %in% c('empSE', 'MCSE_empSE')) %>%
-      select(c(all_of(pars), measure, method))
+      mutate(Method=recode_factor(method, MCMC="Bayesian", REML="REML")) %>%
+      select(c(all_of(pars), measure, Method))
     empSErows <- cbind(params, empSEvals)
     allempSErowsHH <- rbind(allempSErowsHH, empSErows)
     
     # Average model-based SE
     modSEvals <- measures %>%
       filter(measure %in% c('avgmodSE', 'MCSE_avgmodSE')) %>%
-      select(c(theta, measure, method))
+      mutate(Method=recode_factor(method, MCMC="Bayesian", REML="REML")) %>%
+      select(c(theta, measure, Method))
     modSErows <- cbind(params, modSEvals)
     allmodSErowsHH <- rbind(allmodSErowsHH, modSErows)
     
     # Relative % error in model-based SE
     pcterrmodSEvals <- measures %>%
       filter(measure %in% c('pcterrmodSE', 'MCSE_pcterrmodSE')) %>%
-      select(c(theta, measure, method))
+      mutate(Method=recode_factor(method, MCMC="Bayesian", REML="REML")) %>%
+      select(c(theta, measure, Method))
     pcterrmodSErows <- cbind(params, pcterrmodSEvals)
     allpcterrmodSErowsHH <- rbind(allpcterrmodSErowsHH, pcterrmodSErows)
     
     # Average interval length
     intlenvals <- measures %>%
       filter(measure %in% c('avgintlength', 'MCSE_avgintlength')) %>%
-      select(c(theta, measure, method))
+      mutate(Method=recode_factor(method, MCMC="Bayesian", REML="REML")) %>%
+      select(c(theta, measure, Method))
     intlenrows <- cbind(params, intlenvals)
     allintlenrowsHH <- rbind(allintlenrowsHH, intlenrows)
   } else {
@@ -94,49 +101,56 @@ for (i in 1:length(file.names)) {
     # Bias values
     biasvals <- measures %>%
       filter(measure %in% c('bias', 'MCSE_bias')) %>%
-      select(c(all_of(pars), measure, method))
+      mutate(Method=recode_factor(method, MCMC="Bayesian", REML="REML")) %>%
+      select(c(all_of(pars), measure, Method))
     biasrows <- cbind(params, biasvals)
     allbiasrowsHG <- rbind(allbiasrowsHG, biasrows)
     
     # MSE values
     MSEvals <- measures %>%
       filter(measure %in% c('MSE', 'MCSE_MSE')) %>%
-      select(c(all_of(pars), measure, method))
+      mutate(Method=recode_factor(method, MCMC="Bayesian", REML="REML")) %>%
+      select(c(all_of(pars), measure, Method))
     MSErows <- cbind(params, MSEvals)
     allMSErowsHG <- rbind(allMSErowsHG, MSErows)
     
     # Coverage values
     covvals <- measures %>%
       filter(measure %in% c('coverage', 'MCSE_coverage')) %>%
-      select(c(theta, measure, method))
+      mutate(Method=recode_factor(method, MCMC="Bayesian", REML="REML")) %>%
+      select(c(theta, measure, Method))
     covrows <- cbind(params, covvals)
     allcovrowsHG <- rbind(allcovrowsHG, covrows)
     
     # Empirical SE
     empSEvals <- measures %>%
       filter(measure %in% c('empSE', 'MCSE_empSE')) %>%
-      select(c(all_of(pars), measure, method))
+      mutate(Method=recode_factor(method, MCMC="Bayesian", REML="REML")) %>%
+      select(c(all_of(pars), measure, Method))
     empSErows <- cbind(params, empSEvals)
     allempSErowsHG <- rbind(allempSErowsHG, empSErows)
     
     # Average model-based SE
     modSEvals <- measures %>%
       filter(measure %in% c('avgmodSE', 'MCSE_avgmodSE')) %>%
-      select(c(theta, measure, method))
+      mutate(Method=recode_factor(method, MCMC="Bayesian", REML="REML")) %>%
+      select(c(theta, measure, Method))
     modSErows <- cbind(params, modSEvals)
     allmodSErowsHG <- rbind(allmodSErowsHG, modSErows)
     
     # Relative % error in model-based SE
     pcterrmodSEvals <- measures %>%
       filter(measure %in% c('pcterrmodSE', 'MCSE_pcterrmodSE')) %>%
-      select(c(theta, measure, method))
+      mutate(Method=recode_factor(method, MCMC="Bayesian", REML="REML")) %>%
+      select(c(theta, measure, Method))
     pcterrmodSErows <- cbind(params, pcterrmodSEvals)
     allpcterrmodSErowsHG <- rbind(allpcterrmodSErowsHG, pcterrmodSErows)
     
     # Average interval length
     intlenvals <- measures %>%
       filter(measure %in% c('avgintlength', 'MCSE_avgintlength')) %>%
-      select(c(theta, measure, method))
+      mutate(Method=recode_factor(method, MCMC="Bayesian", REML="REML")) %>%
+      select(c(theta, measure, Method))
     intlenrows <- cbind(params, intlenvals)
     allintlenrowsHG <- rbind(allintlenrowsHG, intlenrows)
   }
@@ -348,7 +362,7 @@ create_Latex_table_multpars <- function(df, maindigits=1, MCSEdigits=1, pars, pa
       * RowFactor(m, spacing=1)
       * Factor(S)
       ~ Heading()*RowFactor(factor(parameters, levels=pars), levelnames=parnames)
-      * Heading()*RowFactor(method)
+      * Heading()*RowFactor(Method)
       * Heading()*(Format(fmtmain(digits=maindigits))*value +
                    Format(fmtMCSE(digits=MCSEdigits))*MCSE)
       * Heading()*identity,
@@ -365,7 +379,7 @@ create_Latex_table <- function(df, maindigits=1, MCSEdigits=1) {
       * RowFactor(m, spacing=1)
       * Factor(S)
       ~ Factor(r)
-      * Heading()*RowFactor(method)
+      * Heading()*RowFactor(Method)
       * Heading()*(Format(fmtmain(digits=maindigits))*value +
                    Format(fmtMCSE(digits=MCSEdigits))*MCSE)
       * Heading()*identity,
@@ -443,7 +457,7 @@ create_Latex_table_multpars(MSEdfHH, maindigits=2, MCSEdigits=1,
 
 # Calculate success rates
 allreprows <- allreprows %>%
-  mutate(MCMC=MCMCreps/1e3*100, REML=REMLreps/1e3*100)
+  mutate(Bayesian=MCMCreps/1e3*100, REML=REMLreps/1e3*100)
 
 toLatex(
   tabular(
@@ -452,7 +466,7 @@ toLatex(
     * Factor(Tp, name="T")
     * Factor(m)
     * Factor(S)
-    ~ (Format(fmtmain(digits=3))*MCMC +
+    ~ (Format(fmtmain(digits=3))*Bayesian +
       Format(fmtmain(digits=3))*REML)
     * Heading()*identity,
     data=allreprows
@@ -467,7 +481,7 @@ toLatex(
     * Factor(m)
     * Factor(S)
     ~ Factor(r, name="$r$")
-    * (Format(fmtmain(digits=3))*MCMC +
+    * (Format(fmtmain(digits=3))*Bayesian +
        Format(fmtmain(digits=3))*REML)
     * Heading()*identity,
     data=allreprows
