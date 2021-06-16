@@ -64,6 +64,9 @@ calculate_measures <- function(clust_per_seq, periods, subjects, WPICC, CAC, the
     true_params_exclCAC <- est$true_params %>%
       select(-c(CAC, BPICC))
     col_order <- colnames(est$REML_ests)
+    
+    # Number of valid REML estimates for CAC
+    REMLreps <- dim(REML_ests_CAC)[1]
   
     # Calculate bias
     REML_bias_CAC <- bias(REML_ests_CAC, true_params_CAC, 'bias', 'REML')
@@ -91,6 +94,9 @@ calculate_measures <- function(clust_per_seq, periods, subjects, WPICC, CAC, the
                                      by=c('measure', 'method'))
     REML_MCSE_MSE <- REML_MCSE_MSE_join[, c(col_order, 'measure', 'method')]
   } else {
+    # Number of valid REML estimates
+    REMLreps <- dim(est$REML_ests)[1]
+    
     # Calculate bias
     REML_bias <- bias(est$REML_ests, est$true_params, 'bias', 'REML')
     # Calculate MCSE of bias estimates
@@ -104,21 +110,21 @@ calculate_measures <- function(clust_per_seq, periods, subjects, WPICC, CAC, the
   }
   
   # Calculate bias
-  MCMC_mean_bias <- bias(MCMC_means, est$true_params, 'bias', 'MCMC')
+  MCMC_median_bias <- bias(MCMC_medians, est$true_params, 'bias', 'MCMC')
   # Calculate MCSE of bias estimates
-  MCMC_mean_MCSE_bias <- MCSE_bias(MCMC_means, 'MCSE_bias', 'MCMC')
+  MCMC_median_MCSE_bias <- MCSE_bias(MCMC_medians, 'MCSE_bias', 'MCMC')
 
   # Calculate MSE
-  MCMC_mean_MSE <- MSE(MCMC_means, est$true_params, 'MSE', 'MCMC')
+  MCMC_median_MSE <- MSE(MCMC_medians, est$true_params, 'MSE', 'MCMC')
   # Calculate MCSE of MSE estimates
-  MCMC_mean_MCSE_MSE <- MCSE_MSE(MCMC_means, est$true_params,
-                                 MCMC_mean_MSE, 'MCSE_MSE', 'MCMC')
+  MCMC_median_MCSE_MSE <- MCSE_MSE(MCMC_medians, est$true_params,
+                                   MCMC_median_MSE, 'MCSE_MSE', 'MCMC')
 
   # Calculate interval coverage
-  true_params_MCMCrep <- est$true_params[rep(1, MCMCreps),] # true_params is a row vector
+  true_params_MCMCrep <- est$true_params[rep(1, dim(MCMC_025)[1]),] # true_params is a row vector
   MCMC_coverage <- coverage(MCMC_025, MCMC_975,
                             true_params_MCMCrep, 'coverage', 'MCMC')
-  true_params_REMLrep <- est$true_params[rep(1, REMLreps),]
+  true_params_REMLrep <- est$true_params[rep(1, dim(est$REML_CI_lowers)[1]),]
   REML_coverage <- coverage(est$REML_CI_lowers, est$REML_CI_uppers,
                             true_params_REMLrep, 'coverage', 'REML')
   REML_KR_coverage <- coverage(est$REML_CI_KR_lowers, est$REML_CI_KR_uppers,
@@ -132,10 +138,10 @@ calculate_measures <- function(clust_per_seq, periods, subjects, WPICC, CAC, the
                                          'MCSE_coverage', 'REML (KR)')
   
   # Calculate empirical standard error
-  MCMC_mean_empSE <- empSE(MCMC_means, 'empSE', 'MCMC')
+  MCMC_median_empSE <- empSE(MCMC_medians, 'empSE', 'MCMC')
   REML_empSE <- empSE(est$REML_ests, 'empSE', 'REML')
   # Calculate MCSE of empirical SE
-  MCMC_mean_MCSE_empSE <- MCSE_empSE(MCMCreps, MCMC_mean_empSE, 'MCSE_empSE', 'MCMC')
+  MCMC_median_MCSE_empSE <- MCSE_empSE(MCMCreps, MCMC_median_empSE, 'MCSE_empSE', 'MCMC')
   REML_MCSE_empSE <- MCSE_empSE(REMLreps, REML_empSE, 'MCSE_empSE', 'REML')
   
   # Calculate average model standard error
@@ -152,11 +158,11 @@ calculate_measures <- function(clust_per_seq, periods, subjects, WPICC, CAC, the
                                         'MCSE_avgmodSE', 'REML (KR)')
 
   # Calculate relative % error in model standard error
-  MCMC_pcterr_modSE <- pcterr_modSE(MCMC_avgmodSE, MCMC_mean_empSE, 'pcterrmodSE', 'MCMC')
+  MCMC_pcterr_modSE <- pcterr_modSE(MCMC_avgmodSE, MCMC_median_empSE, 'pcterrmodSE', 'MCMC')
   REML_pcterr_modSE <- pcterr_modSE(REML_avgmodSE, REML_empSE, 'pcterrmodSE', 'REML')
   REML_KR_pcterr_modSE <- pcterr_modSE(REML_avgKRmodSE, REML_empSE, 'pcterrmodSE', 'REML (KR)')
   # Calculate MCSE of relative % error in model SE
-  MCMC_MCSE_pcterr_modSE <- MCSE_pcterr_modSE(MCMC_sds, MCMC_avgmodSE, MCMC_mean_empSE,
+  MCMC_MCSE_pcterr_modSE <- MCSE_pcterr_modSE(MCMC_sds, MCMC_avgmodSE, MCMC_median_empSE,
                                               'MCSE_pcterrmodSE', 'MCMC')
   REML_MCSE_pcterr_modSE <- MCSE_pcterr_modSE(est$REML_stderrs, REML_avgmodSE, REML_empSE,
                                               'MCSE_pcterrmodSE', 'REML')
@@ -190,13 +196,13 @@ calculate_measures <- function(clust_per_seq, periods, subjects, WPICC, CAC, the
   
   measures <- rbind(
     est$true_params,
-    MCMC_mean_bias,
+    MCMC_median_bias,
     REML_bias,
-    MCMC_mean_MCSE_bias,
+    MCMC_median_MCSE_bias,
     REML_MCSE_bias,
-    MCMC_mean_MSE,
+    MCMC_median_MSE,
     REML_MSE,
-    MCMC_mean_MCSE_MSE,
+    MCMC_median_MCSE_MSE,
     REML_MCSE_MSE,
     MCMC_coverage,
     REML_coverage,
@@ -204,9 +210,9 @@ calculate_measures <- function(clust_per_seq, periods, subjects, WPICC, CAC, the
     MCMC_MCSE_coverage,
     REML_MCSE_coverage,
     REML_KR_MCSE_coverage,
-    MCMC_mean_empSE,
+    MCMC_median_empSE,
     REML_empSE,
-    MCMC_mean_MCSE_empSE,
+    MCMC_median_MCSE_empSE,
     REML_MCSE_empSE,
     MCMC_avgmodSE,
     REML_avgmodSE,
@@ -239,7 +245,8 @@ calculate_measures <- function(clust_per_seq, periods, subjects, WPICC, CAC, the
     Tp=periods,
     m=subjects,
     rho1=WPICC,
-    r=CAC
+    r=CAC,
+    trt=theta
   )
   
   results <- list(
@@ -416,7 +423,7 @@ reduce_nth_results <- function(n, clust_per_seq, periods, subjects, WPICC, CAC, 
   load(file=paste0('results/MCMC', config, '.Rda'))
   # Contains: draws (MCMC posterior draws), parvals (true values), diagnostics
   load(file=paste0('results/REML', config, '.Rda'))
-  # Contains: sumreml (REML fit summary), parvals (true values), confint (KR 95% CI), adj_SE (KR-adjusted SE)
+  # Contains: sumreml (REML fit summary), parvals (true values), adj_ddf (KR-adjusted ddf), adj_SE (KR-adjusted SE)
   
   # Get number of divergent transitions
   div <- diagnostics$ndiv_trans
