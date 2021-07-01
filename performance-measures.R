@@ -1,4 +1,4 @@
-# Calculate performance measures for models with MCMC and REML estimation
+# Calculate performance measures for models with Bayesian and REML estimation
 #
 # Kelsey Grantham (kelsey.grantham@monash.edu)
 
@@ -688,8 +688,8 @@ pcterr_modSE <- function(avgmodSE_ests, empSE_ests, measure_name, method_name) {
   avgmodSE_ests <- select(avgmodSE_ests, -c('measure', 'method'))
   empSE_ests <- select(empSE_ests, -c('measure', 'method'))
   
-  pcterr <- 100 * ((avgmodSE_ests/empSE_ests) - 1) # as.matrix()?
-  pcterr_df <- as.data.frame(pcterr) # TODO: Check whether transpose needed
+  pcterr <- 100 * ((avgmodSE_ests/empSE_ests) - 1)
+  pcterr_df <- as.data.frame(pcterr)
   pcterr_df$measure <- measure_name
   pcterr_df$method <- method_name
   return(pcterr_df)
