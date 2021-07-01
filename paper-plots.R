@@ -75,7 +75,7 @@ m.labs <- c("m = 10", "m = 100")
 names(m.labs) <- c("10", "100")
 
 
-## Figure 4: Bias for theta
+## Figure 3: Bias for theta
 
 # Determine common y-axis limits
 minbiasHG <- signif(
@@ -140,11 +140,11 @@ p4 <- plotminigrid(
 mylegend <- g_legend(p1)
 title <- expression(paste("Bias for the treatment effect, ", hat(theta)))
 p_bias_theta <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
-ggsave("plots/figure4_bias_theta.jpg", p_bias_theta, width=9, height=7, units="in", dpi=400)
-ggsave("plots/figure4_bias_theta.pdf", p_bias_theta, width=9, height=7, units="in", dpi=600)
+ggsave("plots/figure3_bias_theta.jpg", p_bias_theta, width=9, height=7, units="in", dpi=400)
+ggsave("plots/figure3_bias_theta.pdf", p_bias_theta, width=9, height=7, units="in", dpi=600)
 
 
-## Figure 5: MSE for theta
+## Figure 4: MSE for theta
 
 # Determine common y-axis limits
 maxMSEHG <- signif(
@@ -199,11 +199,11 @@ p4 <- plotminigrid(
 mylegend <- g_legend(p1)
 title <- expression(paste("MSE for the treatment effect, ", hat(theta)))
 p_MSE_theta <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
-ggsave("plots/figure5_MSE_theta.jpg", p_MSE_theta, width=9, height=7, units="in", dpi=400)
-ggsave("plots/figure5_MSE_theta.pdf", p_MSE_theta, width=9, height=7, units="in", dpi=600)
+ggsave("plots/figure4_MSE_theta.jpg", p_MSE_theta, width=9, height=7, units="in", dpi=400)
+ggsave("plots/figure4_MSE_theta.pdf", p_MSE_theta, width=9, height=7, units="in", dpi=600)
 
 
-## Figure 6: 95% confidence/credible interval coverage for theta
+## Figure 5: 95% confidence/credible interval coverage for theta
 
 # Determine common y-axis limits
 mincovHG <- signif(
@@ -258,11 +258,11 @@ p4 <- plotminigrid(
 mylegend <- g_legend(p1)
 title <- expression(paste("Confidence/credible interval coverage for the treatment effect, ", hat(theta)))
 p_cov_theta <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
-ggsave("plots/figure6_cov_theta.jpg", p_cov_theta, width=9, height=7, units="in", dpi=400)
-ggsave("plots/figure6_cov_theta.pdf", p_cov_theta, width=9, height=7, units="in", dpi=600)
+ggsave("plots/figure5_cov_theta.jpg", p_cov_theta, width=9, height=7, units="in", dpi=400)
+ggsave("plots/figure5_cov_theta.pdf", p_cov_theta, width=9, height=7, units="in", dpi=600)
 
 
-## Figure 7: Relative % error in model-based SE for theta
+## Figure 6: Relative % error in model-based SE for theta
 
 # Determine common y-axis limits
 maxpcterrmodSEHG <- signif(
@@ -317,11 +317,11 @@ p4 <- plotminigrid(
 mylegend <- g_legend(p1)
 title <- expression(paste("Relative % error in model-based SE for the treatment effect, ", hat(theta)))
 p_pcterrmodSE_theta <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
-ggsave("plots/figure7_pcterrmodSE_theta.jpg", p_pcterrmodSE_theta, width=9, height=7, units="in", dpi=400)
-ggsave("plots/figure7_pcterrmodSE_theta.pdf", p_pcterrmodSE_theta, width=9, height=7, units="in", dpi=600)
+ggsave("plots/figure6_pcterrmodSE_theta.jpg", p_pcterrmodSE_theta, width=9, height=7, units="in", dpi=400)
+ggsave("plots/figure6_pcterrmodSE_theta.pdf", p_pcterrmodSE_theta, width=9, height=7, units="in", dpi=600)
 
 
-## Figure 8: Average 95% confidence/credible interval length for theta
+## Figure 7: Average 95% confidence/credible interval length for theta
 
 # Determine common y-axis limits
 minintlenHG <- signif(
@@ -386,11 +386,11 @@ p4 <- plotminigrid(
 mylegend <- g_legend(p1)
 title <- expression(paste("Average confidence/credible interval width for the treatment effect, ", hat(theta)))
 p_intlen_theta <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
-ggsave("plots/figure8_intlen_theta.jpg", p_intlen_theta, width=9, height=7, units="in", dpi=400)
-ggsave("plots/figure8_intlen_theta.pdf", p_intlen_theta, width=9, height=7, units="in", dpi=600)
+ggsave("plots/figure7_intlen_theta.jpg", p_intlen_theta, width=9, height=7, units="in", dpi=400)
+ggsave("plots/figure7_intlen_theta.pdf", p_intlen_theta, width=9, height=7, units="in", dpi=600)
 
 
-## Figure 9: Bias for WPICC (rho1)
+## Figure 8: Bias for WPICC (rho1)
 
 # Determine common y-axis limits
 minbiasHG <- signif(
@@ -455,11 +455,11 @@ p4 <- plotminigrid(
 mylegend <- g_legend(p1)
 title <- expression(paste("Bias for the within-period intracluster correlation, ", hat(rho[1])))
 p_bias_WPICC <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
-ggsave("plots/figure9_bias_WPICC.jpg", p_bias_WPICC, width=9, height=7, units="in", dpi=400)
-ggsave("plots/figure9_bias_WPICC.pdf", p_bias_WPICC, width=9, height=7, units="in", dpi=600)
+ggsave("plots/figure8_bias_WPICC.jpg", p_bias_WPICC, width=9, height=7, units="in", dpi=400)
+ggsave("plots/figure8_bias_WPICC.pdf", p_bias_WPICC, width=9, height=7, units="in", dpi=600)
 
 
-## Figure 10: MSE for WPICC
+## Figure 9: MSE for WPICC
 
 # Determine common y-axis limits
 maxMSEHG <- signif(
@@ -514,11 +514,11 @@ p4 <- plotminigrid(
 mylegend <- g_legend(p1)
 title <- expression(paste("MSE for the within-period intracluster correlation, ", hat(rho[1])))
 p_MSE_WPICC <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title)
-ggsave("plots/figure10_MSE_WPICC.jpg", p_MSE_WPICC, width=9, height=7, units="in", dpi=400)
-ggsave("plots/figure10_MSE_WPICC.pdf", p_MSE_WPICC, width=9, height=7, units="in", dpi=600)
+ggsave("plots/figure9_MSE_WPICC.jpg", p_MSE_WPICC, width=9, height=7, units="in", dpi=400)
+ggsave("plots/figure9_MSE_WPICC.pdf", p_MSE_WPICC, width=9, height=7, units="in", dpi=600)
 
 
-## Figure 11: Bias for CAC (r)
+## Figure 10: Bias for CAC (r)
 # Note: Only for HG model, not HH
 
 # Determine common y-axis limits
@@ -558,11 +558,11 @@ p2 <- plotminigrid(
 mylegend <- g_legend(p1)
 title <- expression(paste("Bias for the cluster autocorrelation, ", hat(r)))
 p_bias_CAC <- make_1x2_multiplot(p1, p2, mylegend, title)
-ggsave("plots/figure11_bias_CAC.jpg", p_bias_CAC, width=9, height=4, units="in", dpi=400)
-ggsave("plots/figure11_bias_CAC.pdf", p_bias_CAC, width=9, height=4, units="in", dpi=600)
+ggsave("plots/figure10_bias_CAC.jpg", p_bias_CAC, width=9, height=4, units="in", dpi=400)
+ggsave("plots/figure10_bias_CAC.pdf", p_bias_CAC, width=9, height=4, units="in", dpi=600)
 
 
-## Figure 12: MSE for CAC
+## Figure 11: MSE for CAC
 
 # Determine common y-axis limits
 maxMSEHG <- signif(
@@ -601,11 +601,11 @@ p2 <- plotminigrid(
 mylegend <- g_legend(p1)
 title <- expression(paste("MSE for the cluster autocorrelation, ", hat(r)))
 p_MSE_CAC <- make_1x2_multiplot(p1, p2, mylegend, title)
-ggsave("plots/figure12_MSE_CAC.jpg", p_MSE_CAC, width=9, height=4, units="in", dpi=400)
-ggsave("plots/figure12_MSE_CAC.pdf", p_MSE_CAC, width=9, height=4, units="in", dpi=600)
+ggsave("plots/figure11_MSE_CAC.jpg", p_MSE_CAC, width=9, height=4, units="in", dpi=400)
+ggsave("plots/figure11_MSE_CAC.pdf", p_MSE_CAC, width=9, height=4, units="in", dpi=600)
 
 
-# Figures 13 and 14: Histogram plots of MCMC posterior medians, comparing replicates with divergent
+# Figures D1 and D2: Histogram plots of MCMC posterior medians, comparing replicates with divergent
 # transitions to replicates without divergent transitions
 load(file='estimates/estimates_S1_T5_m100_WPICC5_CAC100_theta0.Rda')
 
@@ -641,8 +641,8 @@ p_theta <- ggplot(MCMC_medians, aes(x=theta, fill=Replicates_type, colour=Replic
     legend.title=element_text(size=12), legend.text=element_text(size=12),
     legend.position="bottom"
   )
-ggsave("plots/figure13_theta_medians_div_nodiv.jpg", p_theta, width=9, height=7, units="in", dpi=400)
-ggsave("plots/figure13_theta_medians_div_nodiv.pdf", p_theta, width=9, height=7, units="in", dpi=600)
+ggsave("plots/figureD1_theta_medians_div_nodiv.jpg", p_theta, width=9, height=7, units="in", dpi=400)
+ggsave("plots/figureD1_theta_medians_div_nodiv.pdf", p_theta, width=9, height=7, units="in", dpi=600)
 
 # WPICC posterior medians
 p_WPICC <- ggplot(MCMC_medians, aes(x=WPICC, fill=Replicates_type, colour=Replicates_type)) +
@@ -662,5 +662,5 @@ p_WPICC <- ggplot(MCMC_medians, aes(x=WPICC, fill=Replicates_type, colour=Replic
     legend.title=element_text(size=12), legend.text=element_text(size=12),
     legend.position="bottom"
   )
-ggsave("plots/figure14_WPICC_medians_div_nodiv.jpg", p_WPICC, width=9, height=7, units="in", dpi=400)
-ggsave("plots/figure14_WPICC_medians_div_nodiv.pdf", p_WPICC, width=9, height=7, units="in", dpi=600)
+ggsave("plots/figureD2_WPICC_medians_div_nodiv.jpg", p_WPICC, width=9, height=7, units="in", dpi=400)
+ggsave("plots/figureD2_WPICC_medians_div_nodiv.pdf", p_WPICC, width=9, height=7, units="in", dpi=600)
