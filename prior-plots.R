@@ -92,12 +92,12 @@ sig2cp_prior <- sig2cp_implied(sig2e_vals, WPICC_vals, sig2c_prior)
 p_sig2c <- plot_dens(sig2c_prior) +
   xlab(expression(sigma[C]^2)) +
   ggtitle(expression(paste("Implied distribution of ", sigma[C]^2))) +
-  xlim(c(0, 5))
+  xlim(c(0, 2))
 
 p_sig2cp <- plot_dens(sig2cp_prior) +
   xlab(expression(sigma[CP]^2)) +
   ggtitle(expression(paste("Implied distribution of ", sigma[CP]^2))) +
-  xlim(c(0, 5))
+  xlim(c(0, 2))
 
 p_vars <- grid.arrange(arrangeGrob(p_sig2c, p_sig2cp, nrow=1))
 ggsave("plots/figureA1_impliedpriors.jpg", p_vars, width=8, height=4, units="in", dpi=400)
