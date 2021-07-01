@@ -1,4 +1,4 @@
-// Stan program for SW-HG-corr-time model
+// Stan program for non-centered block-exchangeable model
 data {
   int<lower=0> clusters;
   int<lower=0> subjects;
@@ -36,9 +36,9 @@ model {
   // this section computes the log joint likelihood conditional on the
   // parameters, in two parts
   // part 1: log prior density contribution
-  theta ~ normal(0, 1e2); // uniform(-1e2, 1e2)
+  theta ~ normal(0, 1e2);
   per ~ normal(0, 1e2);
-  sig_sq_subject ~ cauchy(0, 1) T[0,]; // inv_gamma(2, 2)
+  sig_sq_subject ~ cauchy(0, 1) T[0,];
   WPICC ~ beta(1.5, 10.5);
   CAC ~ beta(5, 2);
   C_tilde ~ normal(0, 1);

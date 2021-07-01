@@ -1,4 +1,4 @@
-// Stan program for non-centered SW-HH-corr-time model
+// Stan program for non-centered exchangeable correlation model
 data {
   int<lower=0> clusters;
   int<lower=0> subjects;
@@ -32,9 +32,9 @@ model {
   // parameters, in two parts
   // part 1: log prior density contribution
   theta ~ normal(0, 1e2);
-  per ~ normal(0, 1e2); // normal(0, 1)
+  per ~ normal(0, 1e2);
   sig_sq_subject ~ cauchy(0, 1) T[0,];
-  WPICC ~ beta(1.5, 10.5); // peaked around 0.05, some mass around 0, divergent transitions occasionally
+  WPICC ~ beta(1.5, 10.5);
   C_tilde ~ normal(0, 1);
   // part 2: log likelihood contribution
   for (i in 1:clusters) {
