@@ -1,6 +1,6 @@
 #!/bin/env Rscript
 #
-# Extracts one set of input parameters from parameters.csv, then fits both models
+# Extracts one set of input parameters from spreadsheet, then fits both models
 #
 # Kelsey Grantham (kelsey.grantham@monash.edu)
 
