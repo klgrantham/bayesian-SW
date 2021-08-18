@@ -15,9 +15,11 @@ fit_models <- function(params, stanmod, seedval){
   # Inputs:
   #   params - a data frame containing input parameters for one particular
   #            simulation configuration
+  #   stanmod - compiled Stan model
+  #   seedval - random number seed
   # Outputs:
   #   MCMC_[config].Rda - saves an R data file containing the MCMC posterior
-  #                       draws (sumreml), true parameter values (parvals), and
+  #                       draws (draws), true parameter values (parvals), and
   #                       diagnostics (results of diagnostic checks and number
   #                       of divergent transitions)
   #   REML_[config].Rda - saves an R data file containing the summary of the
