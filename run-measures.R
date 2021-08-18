@@ -15,11 +15,11 @@ myparams <- params[params$spec_id==vn,][1,]
 print('We will use the params:')
 print(myparams)
 
-reduce_all_results(10, myparams$clust_per_seq, myparams$periods,
+reduce_all_results(1000, myparams$clust_per_seq, myparams$periods,
                    myparams$subjects, myparams$WPICC,
                    myparams$CAC, myparams$theta)
 
-collate_results(10, myparams$clust_per_seq, myparams$periods,
+collate_results(1000, myparams$clust_per_seq, myparams$periods,
                 myparams$subjects, myparams$WPICC,
                 myparams$CAC, myparams$theta)
 
