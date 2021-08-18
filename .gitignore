@@ -8,7 +8,6 @@
 *.png
 *.pdf
 *.jpg
-*.csv
 plots/
 results/
 performance_measures/
